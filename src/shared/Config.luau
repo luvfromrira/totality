@@ -3,6 +3,9 @@ local Config = {}
 
 Config.TOTAL_ROOMS = 100
 
+-- Where room 1 is built. High up so it doesn't clash with the baseplate.
+Config.START_CFRAME = CFrame.new(0, 200, 0)
+
 -- How many rooms exist in front of / behind the furthest opened door.
 Config.ROOMS_AHEAD = 2
 Config.ROOMS_BEHIND = 2

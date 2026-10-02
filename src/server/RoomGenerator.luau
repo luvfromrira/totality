@@ -16,6 +16,7 @@
 
 	Optional attributes on a room Model:
 	  Weight  (number) - how often it's picked, default 1
+	  Turn    (number) - 1 if the exit turns left, -1 if right, 0/none if straight
 	  MinRoom (number) - earliest room number it can appear in
 	  MaxRoom (number) - latest room number it can appear in
 ]]
@@ -25,6 +26,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Research = require(script.Parent.Research)
+local RoomPresets = require(script.Parent.RoomPresets)
 
 local RoomGenerator = {}
 
@@ -33,41 +35,6 @@ local sequence: { Model } = {} -- preset chosen for each room number
 local loaded: { [number]: Model } = {}
 local roomsFolder: Folder
 local furthestOpened = 0
-
-local function makePlaceholderRoom(): Model
-	-- Used when no presets exist yet, so the generator can be tested right away.
-	local model = Instance.new("Model")
-	model.Name = "Placeholder"
-	local function part(name, size, cframe, props)
-		local p = Instance.new("Part")
-		p.Name = name
-		p.Anchored = true
-		p.Size = size
-		p.CFrame = cframe
-		p.Material = Enum.Material.Concrete
-		p.Color = Color3.fromRGB(40, 40, 46)
-		for k, v in props or {} do
-			p[k] = v
-		end
-		p.Parent = model
-		return p
-	end
-	local length = 40
-	part("Floor", Vector3.new(20, 1, length), CFrame.new(0, -0.5, -length / 2))
-	part("Ceiling", Vector3.new(20, 1, length), CFrame.new(0, 12.5, -length / 2))
-	part("WallL", Vector3.new(1, 12, length), CFrame.new(-10.5, 6, -length / 2))
-	part("WallR", Vector3.new(1, 12, length), CFrame.new(10.5, 6, -length / 2))
-	part("Entrance", Vector3.new(1, 1, 1), CFrame.new(0, 0, 0),
-		{ Transparency = 1, CanCollide = false })
-	part("Exit", Vector3.new(1, 1, 1), CFrame.new(0, 0, -length),
-		{ Transparency = 1, CanCollide = false })
-	part("Door", Vector3.new(8, 10, 1), CFrame.new(0, 5, -length + 0.5),
-		{ Color = Color3.fromRGB(90, 60, 40), Material = Enum.Material.Wood })
-	part("ResearchSpawn", Vector3.new(1, 1, 1), CFrame.new(6, 1, -length / 2),
-		{ Transparency = 1, CanCollide = false })
-	model.PrimaryPart = model.Floor
-	return model
-end
 
 local function getPresets(): ({ Model }, { [string]: Model })
 	local rooms = ServerStorage:FindFirstChild("Rooms")
@@ -90,9 +57,14 @@ local function getPresets(): ({ Model }, { [string]: Model })
 			end
 		end
 	end
+	-- Fall back to the built-in rooms for anything not built in Studio.
 	if #normal == 0 then
-		warn("[Totality] No presets in ServerStorage.Rooms.Normal - using placeholder rooms")
-		table.insert(normal, makePlaceholderRoom())
+		normal = RoomPresets.BuildNormal()
+	end
+	for name, m in RoomPresets.BuildSpecial() do
+		if not special[name] then
+			special[name] = m
+		end
 	end
 	return normal, special
 end
@@ -114,10 +86,14 @@ end
 
 local function buildSequence()
 	local normal, special = getPresets()
+	-- Net heading: -1 = facing right, 0 = forward, 1 = left. Keeping it in that
+	-- range stops the path from curling back into rooms that are still loaded.
+	local heading = 0
 	for n = 1, Config.TOTAL_ROOMS do
 		local fixedName = Config.FIXED_ROOMS[n]
 		if fixedName and special[fixedName] then
 			sequence[n] = special[fixedName]
+			heading += special[fixedName]:GetAttribute("Turn") or 0
 			continue
 		end
 		local candidates = {}
@@ -125,7 +101,9 @@ local function buildSequence()
 			local min = m:GetAttribute("MinRoom") or 1
 			local max = m:GetAttribute("MaxRoom") or math.huge
 			-- Avoid the same preset twice in a row when there's another option.
-			if n >= min and n <= max and (m ~= sequence[n - 1] or #normal == 1) then
+			local turn = m:GetAttribute("Turn") or 0
+			if n >= min and n <= max and math.abs(heading + turn) <= 1
+				and (m ~= sequence[n - 1] or #normal == 1) then
 				table.insert(candidates, m)
 			end
 		end
@@ -133,6 +111,7 @@ local function buildSequence()
 			candidates = normal
 		end
 		sequence[n] = pickWeighted(candidates)
+		heading += sequence[n]:GetAttribute("Turn") or 0
 	end
 end
 
@@ -145,11 +124,12 @@ local function spawnRoom(n: number)
 	room:SetAttribute("RoomNumber", n)
 
 	local entrance = room:FindFirstChild("Entrance", true)
-	assert(entrance and room:FindFirstChild("Exit", true),
-		`Preset {sequence[n].Name} is missing an Entrance or Exit part`)
+	assert(entrance, `Preset {sequence[n].Name} is missing an Entrance part`)
+	assert(n == Config.TOTAL_ROOMS or room:FindFirstChild("Exit", true),
+		`Preset {sequence[n].Name} is missing an Exit part`)
 
 	-- Line this room's Entrance up with the previous room's Exit.
-	local attachTo = CFrame.new(0, 0, 0)
+	local attachTo = Config.START_CFRAME
 	local prev = loaded[n - 1]
 	if prev then
 		attachTo = prev:FindFirstChild("Exit", true).CFrame
