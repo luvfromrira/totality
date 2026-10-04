@@ -28,7 +28,7 @@ Config.RESEARCH_MAX = 2
 
 -- Optional looping ambient sound: paste a sound's asset ID from the Creator
 -- Store (e.g. a low drone or ship hum). nil = no sound.
-Config.AMBIENT_SOUND_ID = nil
+Config.AMBIENT_SOUND_ID = 1843721367
 
 -- A preset can't appear again until this many other rooms have passed.
 Config.NO_REPEAT_WITHIN = 4
