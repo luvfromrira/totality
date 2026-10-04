@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 
 local LightingSetup = require(script.LightingSetup)
 local RoomGenerator = require(script.RoomGenerator)
+local Showcase = require(script.Showcase)
 local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
 
 LightingSetup.Apply()
@@ -12,7 +13,12 @@ local baseplate = workspace:FindFirstChild("Baseplate")
 if baseplate then
 	baseplate:Destroy()
 end
-RoomGenerator.Start(Config.SEED)
+local showcaseSpawn: CFrame? = nil
+if Config.SHOWCASE then
+	showcaseSpawn = Showcase.Build()
+else
+	RoomGenerator.Start(Config.SEED)
+end
 
 -- Spawn players inside the Start room instead of on the baseplate.
 -- No spawn forcefield: remove it as soon as it appears.
@@ -32,6 +38,11 @@ local function onCharacter(character: Model)
 			task.defer(child.Destroy, child)
 		end
 	end)
+	if showcaseSpawn then
+		character:WaitForChild("HumanoidRootPart")
+		character:PivotTo(showcaseSpawn)
+		return
+	end
 	local rooms = workspace:WaitForChild("GeneratedRooms")
 	local room1 = rooms:WaitForChild("Room1", 10)
 	local spawnPoint = room1 and room1:FindFirstChild("PlayerSpawn", true)

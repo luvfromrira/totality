@@ -3,6 +3,9 @@ local Config = {}
 
 Config.TOTAL_ROOMS = 100
 
+-- true = don't start a run; lay out every room side by side to look at.
+Config.SHOWCASE = false
+
 -- Set to a number to replay the same run every time (e.g. 194006090).
 -- Leave as nil for a new random run each time.
 Config.SEED = nil
