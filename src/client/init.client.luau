@@ -2,7 +2,10 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Config = require(ReplicatedStorage.Shared.Config)
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Flicker = require(script.Flicker)
+
+task.spawn(Flicker.Start)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"

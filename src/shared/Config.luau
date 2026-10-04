@@ -18,7 +18,11 @@ Config.FIXED_ROOMS = {
 	[100] = "Final",
 }
 
--- Chance (0-1) that each ResearchSpawn point in a room gets a research item.
-Config.RESEARCH_CHANCE = 0.35
+-- How many research items each room can have (picked at random in this range).
+Config.RESEARCH_MIN = 0
+Config.RESEARCH_MAX = 2
+
+-- Chance (0-1) that any given lamp flickers.
+Config.FLICKER_CHANCE = 0.06
 
 return Config
