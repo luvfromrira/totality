@@ -28,6 +28,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Decay = require(script.Parent.Decay)
 local Research = require(script.Parent.Research)
 local RoomPresets = require(script.Parent.RoomPresets)
 
@@ -126,23 +127,40 @@ local function overlaps(min: Vector3, max: Vector3, upTo: number): boolean
 end
 
 -- Candidate presets for room n, in weighted-random order.
-local function candidatesFor(n: number, normal: { Model }, special: { [string]: Model }, heading: number, previous: Model?): { Model }
+local function candidatesFor(n: number, normal: { Model }, special: { [string]: Model }, heading: number): { Model }
 	local fixed = Config.FIXED_ROOMS[n]
 	if fixed and special[fixed] then
 		return { special[fixed] }
 	end
-	local pool = {}
-	for _, m in normal do
-		local turn = measure(m).turn
-		local min = m:GetAttribute("MinRoom") or 1
-		local max = m:GetAttribute("MaxRoom") or math.huge
-		-- The last room needs an exit only if it isn't the final room.
-		local hasExit = measure(m).exitRel ~= nil or n == Config.TOTAL_ROOMS
-		-- Heading stays within one turn of "forward", so the path never doubles back.
-		if n >= min and n <= max and hasExit and math.abs(heading + turn) <= 1
-			and (m ~= previous or #normal == 1) then
-			table.insert(pool, m)
+	-- Presets used in the last few rooms are skipped so nothing repeats too often.
+	local function usedRecently(m: Model, within: number): boolean
+		for k = 1, within do
+			local p = plan[n - k]
+			if p and p.template == m then
+				return true
+			end
 		end
+		return false
+	end
+	local function gather(within: number): { Model }
+		local pool = {}
+		for _, m in normal do
+			local turn = measure(m).turn
+			local min = m:GetAttribute("MinRoom") or 1
+			local max = m:GetAttribute("MaxRoom") or math.huge
+			-- The last room needs an exit only if it isn't the final room.
+			local hasExit = measure(m).exitRel ~= nil or n == Config.TOTAL_ROOMS
+			-- Heading stays within one turn of "forward", so the path never doubles back.
+			if n >= min and n <= max and hasExit and math.abs(heading + turn) <= 1
+				and not usedRecently(m, within) then
+				table.insert(pool, m)
+			end
+		end
+		return pool
+	end
+	local pool = gather(Config.NO_REPEAT_WITHIN)
+	if #pool == 0 then
+		pool = gather(if #normal > 1 then 1 else 0)
 	end
 	-- Weighted shuffle: repeatedly draw by weight without replacement.
 	local ordered = {}
@@ -180,7 +198,7 @@ local function buildPlan()
 		local heading = if prev then prev.heading else 0
 
 		if not remaining[n] then
-			remaining[n] = candidatesFor(n, normal, special, heading, prev and prev.template)
+			remaining[n] = candidatesFor(n, normal, special, heading)
 		end
 		local template = table.remove(remaining[n], 1)
 
@@ -215,15 +233,11 @@ local function spawnRoom(n: number)
 	local entranceOffset = room:GetPivot():ToObjectSpace(entrance.CFrame)
 	room:PivotTo(placement.attach * entranceOffset:Inverse())
 
-	-- A few lamps per run flicker (handled on the client).
-	for _, d in room:GetDescendants() do
-		if d.Name == "Lamp" and rng:NextNumber() < Config.FLICKER_CHANCE then
-			d:SetAttribute("Flicker", true)
-		end
-	end
-
 	room.Parent = roomsFolder
 	loaded[n] = room
+
+	-- Damage from the attack gets worse the deeper into the ship you go.
+	Decay.Apply(room, n, rng)
 
 	local door = room:FindFirstChild("Door", true) :: BasePart?
 	if door then

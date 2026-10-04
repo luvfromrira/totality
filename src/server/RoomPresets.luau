@@ -1,11 +1,12 @@
 --[[
-	Built-in room presets for the S.S. Totality, a Solstice Solutions research
-	vessel abandoned in orbit above Earth. Used whenever ServerStorage.Rooms
+	Built-in room presets for the S.S. Totality, a Solstice Solutions vessel
+	built to study the Sun, now abandoned in orbit above Earth after it was
+	ransacked and attacked. (Damage is added per room by Decay.luau.) Used whenever ServerStorage.Rooms
 	doesn't have presets made in Studio.
 
 	Style: liminal spaceship. Ordinary, empty crew spaces that feel slightly
 	wrong: repeated details, corporate signage, dim lights that still hum, and
-	windows looking down at Earth.
+	windows out into space.
 
 	Attributes: Weight, MinRoom, MaxRoom, Turn (1 = exit on the left, -1 = right).
 ]]
@@ -34,9 +35,8 @@ local PAL = {
 	quarters = pal(rgb(120, 100, 85), M.Plaster, rgb(80, 28, 32), M.Carpet, rgb(100, 92, 85), M.SmoothPlastic, rgb(60, 45, 35), rgb(255, 200, 140)),
 	med = pal(rgb(150, 175, 165), M.SmoothPlastic, rgb(150, 155, 152), M.SmoothPlastic, rgb(160, 165, 162), M.SmoothPlastic, rgb(80, 100, 95), rgb(210, 240, 235)),
 	hangar = pal(rgb(95, 97, 100), M.Metal, rgb(75, 75, 78), M.Concrete, rgb(70, 72, 76), M.Metal, rgb(200, 160, 40), rgb(255, 170, 90)),
-	edu = pal(rgb(160, 158, 145), M.Plaster, rgb(130, 132, 130), M.CeramicTiles, rgb(150, 150, 145), M.SmoothPlastic, rgb(60, 85, 130), rgb(215, 230, 245)),
+	lab = pal(rgb(180, 185, 188), M.SmoothPlastic, rgb(120, 125, 130), M.SmoothPlastic, rgb(165, 168, 170), M.SmoothPlastic, rgb(80, 90, 100), rgb(225, 235, 245)),
 	hygiene = pal(rgb(130, 165, 160), M.CeramicTiles, rgb(160, 162, 160), M.CeramicTiles, rgb(150, 152, 150), M.SmoothPlastic, rgb(90, 120, 120), rgb(210, 235, 240)),
-	daycare = pal(rgb(180, 140, 150), M.Plaster, rgb(100, 140, 170), M.Fabric, rgb(170, 165, 160), M.SmoothPlastic, rgb(200, 175, 70), rgb(250, 225, 200)),
 	promenade = pal(rgb(165, 162, 155), M.Plaster, rgb(150, 146, 140), M.Marble, rgb(130, 128, 124), M.SmoothPlastic, rgb(110, 105, 95), rgb(215, 225, 240)),
 	archive = pal(rgb(70, 72, 80), M.Metal, rgb(50, 52, 58), M.DiamondPlate, rgb(60, 62, 68), M.Metal, rgb(40, 42, 48), rgb(190, 205, 230)),
 	cryo = pal(rgb(90, 105, 120), M.Metal, rgb(55, 62, 72), M.DiamondPlate, rgb(70, 80, 92), M.Metal, rgb(60, 70, 85), rgb(150, 200, 255)),
@@ -88,7 +88,7 @@ end
 
 ---------------------------------------------------------------- corridors
 
--- Main ship corridor: ribbed walls, sealed hatches, a few windows down to Earth.
+-- Main ship corridor: ribbed walls, sealed hatches, a few windows.
 local function corridor(): Model
 	local m = B.newRoom("Corridor", { Weight = 3 })
 	local w, L, h, p = 12, 48, 10, PAL.hull
@@ -175,12 +175,12 @@ local function office(): Model
 			chair(m, CFrame.new(cx, 0, cz) * CFrame.Angles(0, math.rad(-s * 90), 0), rgb(50, 55, 70))
 		end
 	end
-	wallSign(m, w, -1, -18, 7.2, Vector2.new(6, 2.2), "SOLSTICE SOLUTIONS\nTOMORROW, TOGETHER", rgb(225, 140, 50), rgb(30, 25, 20))
+	wallSign(m, w, -1, -18, 7.2, Vector2.new(6, 2.2), "SOLSTICE SOLUTIONS\nCLOSER TO THE SUN", rgb(225, 140, 50), rgb(30, 25, 20))
 	B.panelGrid(m, w, L, h, 3, 4, p.light, 0.7)
 	return m
 end
 
--- Mess hall: long tables, trays left mid-meal, a view of Earth.
+-- Mess hall: long tables, trays left mid-meal, windows to space.
 local function messHall(): Model
 	local m = B.newRoom("MessHall", { Weight = 2, MinRoom = 2 })
 	local w, L, h, p = 30, 40, 10, PAL.mess
@@ -259,24 +259,25 @@ local function medBay(): Model
 	return m
 end
 
--- Children of the crew had classes here.
-local function education(): Model
-	local m = B.newRoom("EducationWing", { Weight = 2, MinRoom = 3 })
-	local w, L, h, p = 14, 56, 11, PAL.edu
+-- Solar spectroscopy lab: benches of instruments and samples, notes left mid-sentence.
+local function laboratory(): Model
+	local m = B.newRoom("Laboratory", { Weight = 2, MinRoom = 3 })
+	local w, L, h, p = 28, 40, 11, PAL.lab
 	B.shell(m, w, L, h, p)
-	local function lockerRun(side: number, from: number, count: number)
-		for i = 0, count - 1 do
-			local color = if i % 2 == 0 then rgb(60, 85, 130) else rgb(55, 79, 122)
-			part(m, "Locker", Vector3.new(1.5, 7, 2), CFrame.new(side * (w / 2 - 0.75), 3.5, from - i * 2), { Color = color, Material = M.Metal })
+	for _, x in { -7, 7 } do
+		part(m, "Bench", Vector3.new(4, 3, 22), CFrame.new(x, 1.5, -20), { Color = rgb(150, 155, 160), Material = M.Metal })
+		part(m, "BenchTop", Vector3.new(4, 0.2, 22), CFrame.new(x, 3.1, -20), { Color = rgb(40, 42, 46), Material = M.Slate })
+		for _, z in { -12, -18, -24, -28 } do
+			-- Sample vials still glowing faintly orange.
+			part(m, "Vial", Vector3.new(1, 0.6, 0.6), CFrame.new(x - 1, 3.7, z) * CFrame.Angles(0, 0, math.pi / 2),
+				{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = rgb(255, 160, 60), Transparency = 0.3 })
 		end
+		part(m, "Instrument", Vector3.new(1.6, 1.4, 2), CFrame.new(x + 0.8, 3.9, -15), { Color = rgb(60, 62, 68), Material = M.Metal })
+		part(m, "Instrument", Vector3.new(1.6, 2, 1.6), CFrame.new(x + 0.8, 4.2, -26), { Color = rgb(200, 200, 195) })
 	end
-	for _, side in { -1, 1 } do
-		lockerRun(side, -5, 8)
-		lockerRun(side, -31, 10)
-	end
-	wallSign(m, w, -1, -25, 5.5, Vector2.new(6, 3.5), "STAY WITH YOUR GROUP", rgb(160, 125, 90), rgb(30, 30, 30), Enum.Font.Cartoon)
-	wallSign(m, w, 1, -25, 8.5, Vector2.new(6, 1.2), "SOLSTICE YOUTH PROGRAM")
-	B.panelGrid(m, w, L, h, 1, 7, p.light, 0.7)
+	wallSign(m, w, 1, -20, 6, Vector2.new(8, 3.5), "656.3 nm ... ?\nCORONAL OUTPUT x14\nTHIS IS NOT POSSIBLE", rgb(225, 228, 230), rgb(40, 50, 90), Enum.Font.Cartoon)
+	wallSign(m, w, -1, -20, 8.5, Vector2.new(7, 1.2), "SOLAR SPECTROSCOPY LAB")
+	B.panelGrid(m, w, L, h, 2, 4, p.light, 0.7)
 	return m
 end
 
@@ -318,7 +319,7 @@ local function overflow(): Model
 	return m
 end
 
--- Recreation pool with a window over Earth.
+-- Recreation pool with windows out into space.
 local function pool(): Model
 	local m = B.newRoom("RecreationPool", { Weight = 1, MinRoom = 12 })
 	local w, L, h, p = 32, 44, 14, PAL.pool
@@ -372,35 +373,26 @@ local function hangar(): Model
 	return m
 end
 
--- Crew daycare, too clean and too quiet.
-local function daycare(): Model
-	local m = B.newRoom("Daycare", { Weight = 1, MinRoom = 25 })
-	local w, L, h, p = 32, 36, 12, PAL.daycare
+-- Solar monitoring control room. The big screen still shows the Sun.
+local function solarControl(): Model
+	local m = B.newRoom("SolarControl", { Weight = 1, MinRoom = 10 })
+	local w, L, h, p = 32, 36, 12, PAL.office
 	B.shell(m, w, L, h, p)
-	local rim = { Color = p.trim }
-	for _, x in { 4.3, 13.7 } do
-		part(m, "PitRim", Vector3.new(0.6, 1.5, 12), CFrame.new(x, 0.75, -12), rim)
+	B.onWall(m, w, -1, -18, 6.5, Vector2.new(16, 7), 0.2, "Screen", { Color = rgb(10, 10, 14) })
+	local sun = part(m, "Sun", Vector3.new(0.1, 5, 5), CFrame.new(-w / 2 + 0.25, 7, -18),
+		{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(255, 130, 40), CanCollide = false }) :: Part
+	glowing(sun, rgb(255, 140, 60), 14, 0.8)
+	wallSign(m, w, -1, -18, 2.2, Vector2.new(10, 1), "SOL ACTIVITY: ABNORMAL", rgb(60, 15, 10), rgb(255, 120, 80), Enum.Font.Code)
+	-- Two rows of consoles facing the screen, chairs pushed back.
+	for _, x in { -4, 4 } do
+		part(m, "Console", Vector3.new(2, 3, 12), CFrame.new(x, 1.5, -18), { Color = rgb(55, 58, 64), Material = M.Metal })
+		for _, z in { -14, -18, -22 } do
+			part(m, "Display", Vector3.new(0.1, 1.4, 2.4), CFrame.new(x - 0.6, 3.7, z) * CFrame.Angles(0, 0, -0.3),
+				{ Material = M.Neon, Color = rgb(70, 40, 25), CanCollide = false })
+			chair(m, CFrame.new(x + 2.6, 0, z) * CFrame.Angles(0, math.rad(90), 0), rgb(60, 65, 80))
+		end
 	end
-	for _, z in { -6.3, -17.7 } do
-		part(m, "PitRim", Vector3.new(8.8, 1.5, 0.6), CFrame.new(9, 0.75, z), rim)
-	end
-	local rand = Random.new(11)
-	local colors = { rgb(190, 60, 60), rgb(60, 115, 190), rgb(210, 175, 50), rgb(70, 160, 95) }
-	for _ = 1, 60 do
-		part(m, "Ball", Vector3.new(1, 1, 1),
-			CFrame.new(rand:NextNumber(5.2, 12.8), rand:NextNumber(0.5, 1.2), rand:NextNumber(-16.8, -7.2)),
-			{ Shape = Enum.PartType.Ball, Color = colors[rand:NextInteger(1, #colors)], CanCollide = false, CastShadow = false })
-	end
-	part(m, "Table", Vector3.new(4, 0.3, 4), CFrame.new(-8, 2.15, -12), { Color = rgb(220, 220, 220) })
-	part(m, "TableLeg", Vector3.new(0.6, 2, 0.6), CFrame.new(-8, 1, -12), { Color = rgb(220, 220, 220) })
-	for i, o in { Vector3.new(3, 0, 0), Vector3.new(-3, 0, 0), Vector3.new(0, 0, 3), Vector3.new(0, 0, -3) } do
-		part(m, "Stool", Vector3.new(1.2, 1.2, 1.2), CFrame.new(-8 + o.X, 0.6, -12 + o.Z), { Color = colors[i] })
-	end
-	for _, b in { { -13, 1, -30 }, { -11, 1, -30 }, { -13, 3, -30 } } do
-		part(m, "Block", Vector3.new(2, 2, 2), CFrame.new(b[1], b[2], b[3]), { Color = rgb(150, 120, 200), Material = M.Fabric })
-	end
-	wallSign(m, w, 1, -24, 5, Vector2.new(4, 3), "DON'T LOOK BACK", rgb(235, 235, 230), rgb(190, 40, 40), Enum.Font.Cartoon)
-	B.panelGrid(m, w, L, h, 3, 3, p.light, 0.6)
+	B.panelGrid(m, w, L, h, 2, 3, p.light, 0.6)
 	return m
 end
 
@@ -408,7 +400,7 @@ end
 
 -- Data archive: rows of server racks, a few still blinking.
 local function archive(): Model
-	local m = B.newRoom("DataArchive", { Weight = 2, MinRoom = 5 })
+	local m = B.newRoom("DataArchive", { Weight = 1, MinRoom = 5 })
 	local w, L, h, p = 30, 48, 14, PAL.archive
 	B.shell(m, w, L, h, p)
 	local rand = Random.new(5)
@@ -433,7 +425,7 @@ local function archive(): Model
 	return m
 end
 
--- Promenade: closed shops on one side, a long view of Earth on the other.
+-- Promenade: closed shops on one side, a long window wall on the other.
 local function promenade(): Model
 	local m = B.newRoom("Promenade", { Weight = 1, MinRoom = 20 })
 	local w, L, h, p = 48, 60, 22, PAL.promenade
@@ -492,7 +484,7 @@ local function cryo(): Model
 	return m
 end
 
--- Observatory: dark ring of stones around a glowing core, Earth outside.
+-- Observatory: dark ring of stones around a glowing core.
 local function observatory(): Model
 	local m = B.newRoom("Observatory", { Weight = 1, MinRoom = 30 })
 	local w, L, h, p = 36, 36, 22, PAL.cosmic
@@ -522,7 +514,7 @@ end
 
 ---------------------------------------------------------------- special rooms
 
--- Docking bay where the team boards. Earth fills the windows.
+-- Docking bay where the team boards.
 local function start(): Model
 	local m = B.newRoom("Start")
 	local w, L, h, p = 24, 32, 10, PAL.hull
@@ -534,7 +526,7 @@ local function start(): Model
 		},
 	})
 	endSign(m, 0, -1, 0, 7, Vector2.new(12, 1.8), "WELCOME ABOARD THE S.S. TOTALITY")
-	endSign(m, 0, -1, 0, 5.3, Vector2.new(7, 0.9), "A SOLSTICE SOLUTIONS VESSEL", rgb(225, 140, 50), rgb(30, 25, 20))
+	endSign(m, 0, -1, 0, 5.3, Vector2.new(7, 0.9), "SOLSTICE SOLUTIONS - SOLAR RESEARCH DIVISION", rgb(225, 140, 50), rgb(30, 25, 20))
 	part(m, "Bench", Vector3.new(8, 1.5, 2), CFrame.new(-7, 0.75, -4), { Color = rgb(70, 74, 82), Material = M.Metal })
 	wallSign(m, w, -1, -16, 6, Vector2.new(7, 3),
 		"OBJECTIVE:\nRECOVER ALL RESEARCH\nSOLSTICE THANKS YOU", rgb(25, 28, 30), rgb(120, 220, 140), Enum.Font.Code)
@@ -583,7 +575,7 @@ end
 function RoomPresets.BuildNormal(): { Model }
 	return {
 		corridor(), bend(1), bend(-1), stairwell(), office(), messHall(), quarters(), medBay(),
-		education(), hygiene(), overflow(), pool(), hangar(), daycare(), archive(), promenade(),
+		laboratory(), hygiene(), overflow(), pool(), hangar(), solarControl(), archive(), promenade(),
 		cryo(), observatory(),
 	}
 end

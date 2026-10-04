@@ -177,10 +177,11 @@ local function doorway(parent: Instance, cf: CFrame, o: { [string]: number }, pa
 		cf * CFrame.new(o.x, o.y + (o.h - t) / 2, -0.5),
 		{ Color = Color3.fromRGB(88, 92, 100), Material = Enum.Material.DiamondPlate })
 	-- Small indicator light above every door so the exit is always easy to find.
-	RoomBuilder.bulb(parent, (cf * CFrame.new(o.x, o.y + o.h + 0.6, 0.9)).Position, Color3.fromRGB(120, 220, 160), 12, 0.8, 0.6)
+	local light = RoomBuilder.bulb(parent, (cf * CFrame.new(o.x, o.y + o.h + 0.6, 0.9)).Position, Color3.fromRGB(120, 220, 160), 12, 0.8, 0.6)
+	light.Name = "ExitLight" -- not a "Lamp", so ship damage never breaks it
 end
 
--- Framed glass window in an opening made by `wall`. Space (and Earth) is outside.
+-- Framed glass window in an opening made by `wall`, looking out into space.
 local function window(parent: Instance, cf: CFrame, o: { [string]: number }, pal: Palette)
 	local t = 0.4
 	frame(parent, cf, o, t, { Color = pal.trim, Material = Enum.Material.Metal }, true)

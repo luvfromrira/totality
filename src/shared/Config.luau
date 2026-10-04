@@ -22,7 +22,15 @@ Config.FIXED_ROOMS = {
 Config.RESEARCH_MIN = 0
 Config.RESEARCH_MAX = 2
 
--- Chance (0-1) that any given lamp flickers.
-Config.FLICKER_CHANCE = 0.06
+-- A preset can't appear again until this many other rooms have passed.
+Config.NO_REPEAT_WITHIN = 4
+
+-- Chance (0-1) that any given lamp flickers, before damage is added.
+Config.FLICKER_CHANCE = 0.05
+
+-- Ship damage: rooms before DECAY_START are untouched, and the damage
+-- ramps up until DECAY_FULL, where it's at its worst.
+Config.DECAY_START = 10
+Config.DECAY_FULL = 90
 
 return Config

@@ -1,7 +1,7 @@
 # Totality
 
 Cosmic horror co-op (1-4 players) on Roblox. The S.S. Totality, a Solstice Solutions
-research vessel, was abandoned in orbit above Earth. Solstice wants its research
+vessel built to study the Sun, was ransacked, attacked and abandoned in orbit above Earth. Solstice wants its research
 back, so players are sent aboard to push through 100 procedurally ordered rooms
 and recover it.
 
@@ -32,6 +32,10 @@ Settings live in `src/shared/Config.luau`.
 - The whole 100-room layout is planned when the server starts. Each room's
   bounding box is checked against every earlier room, and the planner backtracks
   if nothing fits, so rooms never overlap.
+- A preset can't repeat within `Config.NO_REPEAT_WITHIN` rooms.
 - Only a few rooms around the players exist at a time.
+- `src/server/Decay.luau` damages rooms more the deeper you go (grime, broken
+  lights, debris, scorch and claw marks, alien residue). Tune with
+  `Config.DECAY_START` / `Config.DECAY_FULL`.
 - Built-in rooms use `src/server/RoomBuilder.luau`, which builds walls, floors and
   doorways so parts touch but never overlap (no gaps, no z-fighting).
