@@ -1,35 +1,51 @@
--- Global lighting: a dark, starless sky outside so the rooms' own lamps do
--- the work, with enough ambient that corners never go pitch black.
+--[[
+	Global lighting for the S.S. Totality: black space outside, low ambient
+	light inside, so the ship's own (dim) lamps do the work. Removes the
+	default place's Atmosphere/Bloom/SunRays, which wash everything out white.
+]]
 local Lighting = game:GetService("Lighting")
 
 local LightingSetup = {}
 
 function LightingSetup.Apply()
-	Lighting.ClockTime = 0
-	Lighting.Brightness = 1
-	Lighting.Ambient = Color3.fromRGB(70, 68, 80)
-	Lighting.OutdoorAmbient = Color3.fromRGB(40, 38, 50)
-	Lighting.EnvironmentDiffuseScale = 0.4
-	Lighting.EnvironmentSpecularScale = 0.4
-	Lighting.GlobalShadows = true
-	Lighting.ExposureCompensation = 0.3
-
-	local function ensure(className: string, name: string)
-		local obj = Lighting:FindFirstChild(name) or Instance.new(className)
-		obj.Name = name
-		obj.Parent = Lighting
-		return obj
+	for _, child in Lighting:GetChildren() do
+		if child:IsA("PostEffect") or child:IsA("Atmosphere") or child:IsA("Sky") or child:IsA("Clouds") then
+			child:Destroy()
+		end
 	end
 
-	local cc = ensure("ColorCorrectionEffect", "TotalityColor")
-	cc.Contrast = 0.1
-	cc.Saturation = -0.15
-	cc.TintColor = Color3.fromRGB(235, 235, 255)
+	Lighting.ClockTime = 0
+	Lighting.Brightness = 0
+	Lighting.Ambient = Color3.fromRGB(26, 26, 32)
+	Lighting.OutdoorAmbient = Color3.fromRGB(18, 18, 24)
+	Lighting.EnvironmentDiffuseScale = 0.15
+	Lighting.EnvironmentSpecularScale = 0.3
+	Lighting.GlobalShadows = true
+	Lighting.ExposureCompensation = -0.2
+	Lighting.FogEnd = 100000
 
-	local bloom = ensure("BloomEffect", "TotalityBloom")
-	bloom.Intensity = 0.6
-	bloom.Size = 24
-	bloom.Threshold = 1.6
+	-- Starfield, no sun or moon.
+	local sky = Instance.new("Sky")
+	sky.Name = "TotalitySky"
+	sky.StarCount = 5000
+	sky.CelestialBodiesShown = false
+	sky.Parent = Lighting
+
+	local cc = Instance.new("ColorCorrectionEffect")
+	cc.Name = "TotalityColor"
+	cc.Brightness = -0.03
+	cc.Contrast = 0.12
+	cc.Saturation = -0.2
+	cc.TintColor = Color3.fromRGB(230, 235, 255)
+	cc.Parent = Lighting
+
+	-- Only the brightest things glow a little.
+	local bloom = Instance.new("BloomEffect")
+	bloom.Name = "TotalityBloom"
+	bloom.Intensity = 0.25
+	bloom.Size = 18
+	bloom.Threshold = 2.4
+	bloom.Parent = Lighting
 end
 
 return LightingSetup

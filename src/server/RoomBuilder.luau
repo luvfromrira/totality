@@ -68,15 +68,15 @@ function RoomBuilder.panel(parent: Instance, x: number, y: number, z: number, co
 	local s = size or Vector3.new(4, 0.3, 1.6)
 	local p = part(parent, "Lamp", s, CFrame.new(x, y - s.Y / 2, z), {
 		Material = Enum.Material.Neon,
-		Color = color,
+		Color = color:Lerp(Color3.new(0, 0, 0), 0.35),
 		CanCollide = false,
 	}) :: Part
 	local light = Instance.new("SurfaceLight")
 	light.Face = Enum.NormalId.Bottom
 	light.Angle = 120
 	light.Color = color
-	light.Brightness = brightness or 1.4
-	light.Range = range or 18
+	light.Brightness = brightness or 0.8
+	light.Range = range or 16
 	light.Shadows = true
 	light.Parent = p
 	return p
@@ -100,13 +100,13 @@ function RoomBuilder.bulb(parent: Instance, position: Vector3, color: Color3, ra
 	local p = part(parent, "Lamp", Vector3.new(d, d, d), CFrame.new(position), {
 		Shape = Enum.PartType.Ball,
 		Material = Enum.Material.Neon,
-		Color = color,
+		Color = color:Lerp(Color3.new(0, 0, 0), 0.35),
 		CanCollide = false,
 	}) :: Part
 	local light = Instance.new("PointLight")
 	light.Color = color
-	light.Range = range or 18
-	light.Brightness = brightness or 1.3
+	light.Range = range or 16
+	light.Brightness = brightness or 0.8
 	light.Shadows = true
 	light.Parent = p
 	return p
@@ -134,40 +134,62 @@ end
 --[[
 	Wall slab. `cf` is the centre of the wall's inner face at floor level,
 	LookVector pointing out of the room. The slab fills 1 stud outward from there.
-	`opening` cuts a doorway: { x = offset along the wall, y = bottom, w, h }.
+	`openings` cut holes in it: { { x = offset along the wall, y = bottom, w, h }, ... }
+	(must not overlap each other).
 ]]
-function RoomBuilder.wall(parent: Instance, cf: CFrame, span: number, height: number, pal: Palette, opening: { [string]: number }?)
+function RoomBuilder.wall(parent: Instance, cf: CFrame, span: number, height: number, pal: Palette,
+	openings: { { [string]: number } }?)
 	local function piece(x0: number, x1: number, y0: number, y1: number)
 		part(parent, "Wall", Vector3.new(x1 - x0, y1 - y0, 1),
 			cf * CFrame.new((x0 + x1) / 2, (y0 + y1) / 2, -0.5),
 			{ Color = pal.wall, Material = pal.wallMat })
 	end
-	local left, right = -span / 2, span / 2
-	if not opening then
-		piece(left, right, 0, height)
-		return
+	local list = table.clone(openings or {})
+	table.sort(list, function(a, b)
+		return a.x < b.x
+	end)
+	local cursor = -span / 2
+	for _, o in list do
+		local ox0, ox1 = o.x - o.w / 2, o.x + o.w / 2
+		piece(cursor, ox0, 0, height)
+		piece(ox0, ox1, 0, o.y)
+		piece(ox0, ox1, math.min(o.y + o.h, height), height)
+		cursor = ox1
 	end
-	local ox0, ox1 = opening.x - opening.w / 2, opening.x + opening.w / 2
-	local oy0, oy1 = opening.y, math.min(opening.y + opening.h, height)
-	piece(left, ox0, 0, height)
-	piece(ox1, right, 0, height)
-	piece(ox0, ox1, 0, oy0)
-	piece(ox0, ox1, oy1, height)
+	piece(cursor, span / 2, 0, height)
 end
 
--- Frame + Door filling an opening made by `wall` (same cf/opening).
-local function doorway(parent: Instance, cf: CFrame, opening: { [string]: number }, pal: Palette)
-	local x, y, w, h = opening.x, opening.y, opening.w, opening.h
-	local jamb = 0.5
-	local frameProps = { Color = pal.trim, Material = Enum.Material.Wood }
-	part(parent, "Frame", Vector3.new(jamb, h, 1.2), cf * CFrame.new(x - w / 2 + jamb / 2, y + h / 2, -0.5), frameProps)
-	part(parent, "Frame", Vector3.new(jamb, h, 1.2), cf * CFrame.new(x + w / 2 - jamb / 2, y + h / 2, -0.5), frameProps)
-	part(parent, "Frame", Vector3.new(w - jamb * 2, jamb, 1.2), cf * CFrame.new(x, y + h - jamb / 2, -0.5), frameProps)
-	part(parent, "Door", Vector3.new(w - jamb * 2, h - jamb, 0.4),
-		cf * CFrame.new(x, y + (h - jamb) / 2, -0.5),
-		{ Color = Color3.fromRGB(96, 74, 56), Material = Enum.Material.Wood })
-	-- Light above every door so the exit is always easy to find.
-	RoomBuilder.bulb(parent, (cf * CFrame.new(x, y + h + 0.6, 0.9)).Position, pal.light, 14, 1.1, 0.8)
+-- Frame strips lining the inside edges of an opening (they stick out 0.1 past the wall).
+local function frame(parent: Instance, cf: CFrame, o: { [string]: number }, t: number, props: { [string]: any }, bottom: boolean)
+	part(parent, "Frame", Vector3.new(t, o.h, 1.2), cf * CFrame.new(o.x - o.w / 2 + t / 2, o.y + o.h / 2, -0.5), props)
+	part(parent, "Frame", Vector3.new(t, o.h, 1.2), cf * CFrame.new(o.x + o.w / 2 - t / 2, o.y + o.h / 2, -0.5), props)
+	part(parent, "Frame", Vector3.new(o.w - t * 2, t, 1.2), cf * CFrame.new(o.x, o.y + o.h - t / 2, -0.5), props)
+	if bottom then
+		part(parent, "Frame", Vector3.new(o.w - t * 2, t, 1.2), cf * CFrame.new(o.x, o.y + t / 2, -0.5), props)
+	end
+end
+
+-- Frame + sliding bulkhead Door filling an opening made by `wall`.
+local function doorway(parent: Instance, cf: CFrame, o: { [string]: number }, pal: Palette)
+	local t = 0.5
+	frame(parent, cf, o, t, { Color = pal.trim, Material = Enum.Material.Metal }, false)
+	part(parent, "Door", Vector3.new(o.w - t * 2, o.h - t, 0.4),
+		cf * CFrame.new(o.x, o.y + (o.h - t) / 2, -0.5),
+		{ Color = Color3.fromRGB(88, 92, 100), Material = Enum.Material.DiamondPlate })
+	-- Small indicator light above every door so the exit is always easy to find.
+	RoomBuilder.bulb(parent, (cf * CFrame.new(o.x, o.y + o.h + 0.6, 0.9)).Position, Color3.fromRGB(120, 220, 160), 12, 0.8, 0.6)
+end
+
+-- Framed glass window in an opening made by `wall`. Space (and Earth) is outside.
+local function window(parent: Instance, cf: CFrame, o: { [string]: number }, pal: Palette)
+	local t = 0.4
+	frame(parent, cf, o, t, { Color = pal.trim, Material = Enum.Material.Metal }, true)
+	part(parent, "Window", Vector3.new(o.w - t * 2, o.h - t * 2, 0.2), cf * CFrame.new(o.x, o.y + o.h / 2, -0.5), {
+		Material = Enum.Material.Glass,
+		Color = Color3.fromRGB(170, 190, 210),
+		Transparency = 0.8,
+		CastShadow = false,
+	})
 end
 
 --[[
@@ -176,6 +198,8 @@ end
 	  entrance  boolean, default true (false = solid back wall, e.g. the Start room)
 	  exit      "front" | "left" | "right" | "none" (default "front")
 	  exitY     height of the exit doorway's floor (default 0, used by stairs)
+	  windows   list of { side = "left" | "right" | "front", z or x = centre, y = bottom, w, h }
+	            (side walls use z, the room's depth; the front wall uses x)
 ]]
 function RoomBuilder.shell(model: Model, w: number, L: number, h: number, pal: Palette, opts: { [string]: any }?)
 	local o = opts or {}
@@ -186,9 +210,6 @@ function RoomBuilder.shell(model: Model, w: number, L: number, h: number, pal: P
 	part(model, "Floor", footprint, CFrame.new(0, -0.5, -L / 2), { Color = pal.floor, Material = pal.floorMat })
 	part(model, "Ceiling", footprint, CFrame.new(0, h + 0.5, -L / 2), { Color = pal.ceiling, Material = pal.ceilingMat })
 
-	local door = { x = 0, y = 0, w = RoomBuilder.DOOR_WIDTH, h = RoomBuilder.DOOR_HEIGHT }
-	local exitDoor = { x = 0, y = exitY, w = RoomBuilder.DOOR_WIDTH, h = RoomBuilder.DOOR_HEIGHT }
-
 	local walls = {
 		back = CFrame.new(0, 0, 0) * CFrame.Angles(0, math.pi, 0),
 		front = CFrame.new(0, 0, -L),
@@ -197,14 +218,38 @@ function RoomBuilder.shell(model: Model, w: number, L: number, h: number, pal: P
 	}
 	local spans = { back = w, front = w, left = L + 2, right = L + 2 }
 
-	RoomBuilder.wall(model, walls.back, w, h, pal, if o.entrance ~= false then door else nil)
-	for _, side in { "front", "left", "right" } do
-		local isExit = side == exit
-		RoomBuilder.wall(model, walls[side], spans[side], h, pal, if isExit then exitDoor else nil)
-		if isExit then
-			doorway(model, walls[side], exitDoor, pal)
-			RoomBuilder.marker(model, "Exit", walls[side] * CFrame.new(0, exitY, -1))
+	-- Gather each wall's openings: doorways first, then windows.
+	local openings = { back = {}, front = {}, left = {}, right = {} }
+	local windowsBySide = { back = {}, front = {}, left = {}, right = {} }
+	if o.entrance ~= false then
+		table.insert(openings.back, { x = 0, y = 0, w = RoomBuilder.DOOR_WIDTH, h = RoomBuilder.DOOR_HEIGHT })
+	end
+	local exitDoor = { x = 0, y = exitY, w = RoomBuilder.DOOR_WIDTH, h = RoomBuilder.DOOR_HEIGHT }
+	if openings[exit] then
+		table.insert(openings[exit], exitDoor)
+	end
+	for _, win in o.windows or {} do
+		-- Convert room depth (z) into a position along the side wall.
+		local x = win.x or 0
+		if win.side == "left" then
+			x = -(win.z + L / 2)
+		elseif win.side == "right" then
+			x = win.z + L / 2
 		end
+		local opening = { x = x, y = win.y, w = win.w, h = win.h }
+		table.insert(openings[win.side], opening)
+		table.insert(windowsBySide[win.side], opening)
+	end
+
+	for side, cf in walls do
+		RoomBuilder.wall(model, cf, spans[side], h, pal, openings[side])
+		for _, win in windowsBySide[side] do
+			window(model, cf, win, pal)
+		end
+	end
+	if openings[exit] then
+		doorway(model, walls[exit], exitDoor, pal)
+		RoomBuilder.marker(model, "Exit", walls[exit] * CFrame.new(0, exitY, -1))
 	end
 
 	RoomBuilder.marker(model, "Entrance", CFrame.new(0, 0, 1))

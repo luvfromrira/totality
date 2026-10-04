@@ -1,15 +1,16 @@
 # Totality
 
-Cosmic horror co-op (1-4 players) on Roblox. Players push through 100 procedurally
-ordered rooms searching for research.
+Cosmic horror co-op (1-4 players) on Roblox. The S.S. Totality, a Solstice Solutions
+research vessel, was abandoned in orbit above Earth. Solstice wants its research
+back, so players are sent aboard to push through 100 procedurally ordered rooms
+and recover it.
 
 ## Setup
 1. Install the Rojo VS Code extension, open this folder, run **Rojo: Open menu** → `default.project.json`.
 2. In Studio: Plugins → Rojo → Connect.
-3. Press Play. If you haven't built presets in Studio, the built-in liminal rooms
-   from `src/server/RoomPresets.luau` are used (hallways, cubicles, backrooms,
-   pool rooms, hotel, waiting room, garage, school, restroom, playroom, stairwell,
-   archive, dead mall, observatory, plus the Start and Final rooms).
+3. Press Play. If you haven't built presets in Studio, the built-in ship rooms
+   from `src/server/RoomPresets.luau` are used. The server also removes the
+   default Baseplate (the ship floats in space).
 
 ## Building room presets (in Studio)
 ```

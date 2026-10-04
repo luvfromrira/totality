@@ -5,6 +5,12 @@ local LightingSetup = require(script.LightingSetup)
 local RoomGenerator = require(script.RoomGenerator)
 
 LightingSetup.Apply()
+
+-- The ship floats in space: remove the default baseplate so it isn't visible through windows.
+local baseplate = workspace:FindFirstChild("Baseplate")
+if baseplate then
+	baseplate:Destroy()
+end
 RoomGenerator.Start()
 
 -- Spawn players inside the Start room instead of on the baseplate.
