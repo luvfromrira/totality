@@ -30,6 +30,9 @@ Config.RESEARCH_MAX = 2
 -- Store (e.g. a low drone or ship hum). nil = no sound.
 Config.AMBIENT_SOUND_ID = 1843721367
 
+-- Footstep sound (replaces Roblox's default footsteps). nil = silent.
+Config.FOOTSTEP_SOUND_ID = 87061775498714
+
 -- A preset can't appear again until this many other rooms have passed.
 Config.NO_REPEAT_WITHIN = 4
 

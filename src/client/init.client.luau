@@ -5,9 +5,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Flicker = require(script.Flicker)
 local Ambience = require(script.Ambience)
+local Footsteps = require(script.Footsteps)
 
 task.spawn(Flicker.Start)
 task.spawn(Ambience.Start)
+task.spawn(Footsteps.Start)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"
