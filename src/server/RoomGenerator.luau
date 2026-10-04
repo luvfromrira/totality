@@ -134,9 +134,14 @@ local function candidatesFor(n: number, normal: { Model }, special: { [string]: 
 	end
 	-- Presets used in the last few rooms are skipped so nothing repeats too often.
 	local function usedRecently(m: Model, within: number): boolean
+		local group = m:GetAttribute("Group")
 		for k = 1, within do
 			local p = plan[n - k]
 			if p and p.template == m then
+				return true
+			end
+			-- Presets in the same group (e.g. both corridor bends) share a longer cooldown.
+			if group and p and k <= Config.GROUP_GAP and p.template:GetAttribute("Group") == group then
 				return true
 			end
 		end
@@ -158,7 +163,7 @@ local function candidatesFor(n: number, normal: { Model }, special: { [string]: 
 		end
 		return pool
 	end
-	local pool = gather(Config.NO_REPEAT_WITHIN)
+	local pool = gather(math.max(Config.NO_REPEAT_WITHIN, Config.GROUP_GAP))
 	if #pool == 0 then
 		pool = gather(if #normal > 1 then 1 else 0)
 	end

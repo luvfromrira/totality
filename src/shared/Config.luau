@@ -25,6 +25,10 @@ Config.RESEARCH_MAX = 2
 -- A preset can't appear again until this many other rooms have passed.
 Config.NO_REPEAT_WITHIN = 4
 
+-- Presets with the same Group attribute (like the left and right corridor
+-- bends) must have at least this many rooms between them.
+Config.GROUP_GAP = 3
+
 -- Chance (0-1) that any given lamp flickers, before damage is added.
 Config.FLICKER_CHANCE = 0.05
 
