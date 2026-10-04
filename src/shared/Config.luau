@@ -36,6 +36,16 @@ Config.AMBIENT_SOUND_ID = 1843721367
 -- Footstep sound (replaces Roblox's default footsteps). nil = silent.
 Config.FOOTSTEP_SOUND_ID = 87061775498714
 
+-- Movement. Hold Shift to sprint; running out of stamina leaves you winded
+-- (WINDED_SPEED) until stamina is full again.
+Config.WALK_SPEED = 16
+Config.SPRINT_SPEED = 24
+Config.WINDED_SPEED = 12
+Config.SPRINT_MAX_STAMINA = 100
+Config.SPRINT_DRAIN = 22 -- per second while sprinting (~4.5 s of sprint)
+Config.SPRINT_REGEN = 30 -- per second once refilling starts
+Config.SPRINT_REGEN_DELAY = 1.5 -- seconds after you stop sprinting
+
 -- A preset can't appear again until this many other rooms have passed.
 Config.NO_REPEAT_WITHIN = 4
 

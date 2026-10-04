@@ -6,10 +6,12 @@ local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Co
 local Flicker = require(script.Flicker)
 local Ambience = require(script.Ambience)
 local Footsteps = require(script.Footsteps)
+local Sprint = require(script.Sprint)
 
 task.spawn(Flicker.Start)
 task.spawn(Ambience.Start)
 task.spawn(Footsteps.Start)
+task.spawn(Sprint.Start)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"
