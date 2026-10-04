@@ -133,7 +133,7 @@ local function startSound()
 	sound.Name = "Ambience"
 	sound.SoundId = `rbxassetid://{id}`
 	sound.Looped = true
-	sound.Volume = 0.4
+	sound.Volume = 0.25
 	sound.Parent = SoundService
 	print(`[Totality] Loading ambient sound {id}...`)
 	sound:Play()
@@ -146,7 +146,37 @@ local function startSound()
 	end)
 end
 
+-- Mute Roblox's default footstep sound ("Running") on every character.
+local function muteFootsteps()
+	local function onCharacter(character: Model)
+		local root = character:WaitForChild("HumanoidRootPart", 10)
+		if not root then
+			return
+		end
+		local function mute(child: Instance)
+			if child:IsA("Sound") and child.Name == "Running" then
+				child.Volume = 0
+			end
+		end
+		for _, child in root:GetChildren() do
+			mute(child)
+		end
+		root.ChildAdded:Connect(mute)
+	end
+	local function onPlayer(player: Player)
+		player.CharacterAdded:Connect(onCharacter)
+		if player.Character then
+			task.spawn(onCharacter, player.Character)
+		end
+	end
+	Players.PlayerAdded:Connect(onPlayer)
+	for _, player in Players:GetPlayers() do
+		onPlayer(player)
+	end
+end
+
 function Ambience.Start()
+	muteFootsteps()
 	local atmosphere = makeAtmosphere()
 	local blur = makeBlur()
 	local dust = makeDust()
