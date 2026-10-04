@@ -26,6 +26,7 @@ local function onCharacter(character: Model)
 end
 
 local function onPlayer(player: Player)
+	player.CameraMode = Enum.CameraMode.LockFirstPerson
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then
 		onCharacter(player.Character)

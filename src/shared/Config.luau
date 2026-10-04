@@ -40,6 +40,6 @@ Config.FLICKER_CHANCE = 0.05
 -- DECAY_CURVE above 1 makes it build up slowly at first (higher = slower).
 Config.DECAY_START = 3
 Config.DECAY_FULL = 100
-Config.DECAY_CURVE = 1.6
+Config.DECAY_CURVE = 2.4
 
 return Config

@@ -178,7 +178,7 @@ function Decay.Apply(room: Model, n: number, rng: Random)
 	local params = makeParams(room)
 
 	-- Rubble and junk.
-	for _, hit in floorSpots(room, amount(rng, severity * 14), rng, params) do
+	for _, hit in floorSpots(room, amount(rng, severity * 6), rng, params) do
 		local s = Vector3.new(rng:NextNumber(0.4, 1.8), rng:NextNumber(0.3, 1.2), rng:NextNumber(0.4, 1.8))
 		local cf = CFrame.new(hit.Position + Vector3.new(0, s.Y / 2 - 0.1, 0))
 			* CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, math.pi * 2), rng:NextNumber(-0.3, 0.3))
@@ -188,7 +188,7 @@ function Decay.Apply(room: Model, n: number, rng: Random)
 	end
 
 	-- Ceiling panels that fell and lean at an angle.
-	for _, hit in floorSpots(room, amount(rng, severity * 3), rng, params) do
+	for _, hit in floorSpots(room, amount(rng, severity * 1.5), rng, params) do
 		local cf = CFrame.new(hit.Position + Vector3.new(0, 0.6, 0))
 			* CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0) * CFrame.Angles(rng:NextNumber(0.2, 0.45), 0, 0)
 		deco(room, "FallenPanel", Vector3.new(4, 0.2, 2.5), cf, Color3.fromRGB(120, 122, 125), Enum.Material.Metal)

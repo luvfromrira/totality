@@ -38,7 +38,7 @@ local function createItem(cframe: CFrame): BasePart
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Collect"
 	prompt.ObjectText = "Research"
-	prompt.HoldDuration = 0.5
+	prompt.HoldDuration = 0 -- instant grab
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = item
 	prompt.Triggered:Connect(function()
