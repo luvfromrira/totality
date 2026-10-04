@@ -46,6 +46,8 @@ local PAL = {
 	gym = pal(rgb(175, 178, 182), M.SmoothPlastic, rgb(55, 57, 62), M.Rubber, rgb(150, 152, 156), M.SmoothPlastic, rgb(60, 64, 72), rgb(225, 232, 240)),
 	library = pal(rgb(120, 95, 75), M.Plaster, rgb(85, 60, 42), M.WoodPlanks, rgb(95, 80, 66), M.Wood, rgb(55, 38, 28), rgb(255, 205, 150)),
 	quarantine = pal(rgb(185, 195, 192), M.SmoothPlastic, rgb(160, 168, 165), M.SmoothPlastic, rgb(175, 182, 180), M.SmoothPlastic, rgb(90, 110, 105), rgb(215, 240, 235)),
+	captain = pal(rgb(105, 78, 58), M.Wood, rgb(35, 40, 60), M.Carpet, rgb(80, 62, 48), M.Wood, rgb(60, 42, 30), rgb(255, 205, 150)),
+	xeno = pal(rgb(90, 100, 98), M.Metal, rgb(50, 56, 55), M.DiamondPlate, rgb(70, 78, 76), M.Metal, rgb(50, 60, 58), rgb(190, 225, 215)),
 	cosmic = pal(rgb(40, 38, 52), M.Slate, rgb(30, 28, 40), M.Slate, rgb(25, 24, 35), M.Slate, rgb(90, 70, 150), rgb(180, 160, 255)),
 }
 
@@ -157,30 +159,73 @@ end
 
 ---------------------------------------------------------------- crew areas
 
--- Research office: empty cubicles, monitors still on.
+-- Research office: six cubicles with L-shaped desks, dual monitors, papers left mid-task.
 local function office(): Model
 	local m = B.newRoom("ResearchOffice", { Weight = 2 })
-	local w, L, h, p = 36, 40, 10, PAL.office
+	local w, L, h, p = 36, 40, 11, PAL.office
 	B.shell(m, w, L, h, p)
-	local partition = { Color = rgb(120, 122, 132), Material = M.Fabric }
+	local rand = Random.new(31)
+	local fabric = { Color = rgb(105, 110, 122), Material = M.Fabric }
+	local glass = { Color = rgb(200, 215, 220), Material = M.Glass, Transparency = 0.55, CastShadow = false }
+	local cap = { Color = rgb(150, 152, 158), Material = M.Metal }
+	local desk = { Color = rgb(150, 145, 135), Material = M.Wood }
+	local dark = { Color = rgb(30, 31, 35) }
+	local function panel(size: Vector3, x: number, z: number)
+		-- Fabric lower half, frosted glass upper strip, metal cap.
+		part(m, "Partition", Vector3.new(size.X, 4.2, size.Z), CFrame.new(x, 2.1, z), fabric)
+		part(m, "PartitionGlass", Vector3.new(size.X, 1.2, size.Z), CFrame.new(x, 4.8, z), glass)
+		part(m, "PartitionCap", Vector3.new(size.X + 0.1, 0.15, size.Z + 0.1), CFrame.new(x, 5.475, z), cap)
+	end
 	for _, cx in { -12, 12 } do
 		local s = math.sign(cx)
-		for _, cz in { -10, -26 } do
-			part(m, "Partition", Vector3.new(0.4, 5, 10), CFrame.new(cx + s * 4.8, 2.5, cz), partition)
-			for _, dz in { -4.8, 4.8 } do
-				part(m, "Partition", Vector3.new(9.6, 5, 0.4), CFrame.new(cx - s * 0.2, 2.5, cz + dz), partition)
+		for _, cz in { -7.5, -17.5, -27.5 } do
+			panel(Vector3.new(0.3, 0, 9), cx + s * 4.85, cz)
+			for _, dz in { -4.35, 4.35 } do
+				panel(Vector3.new(9.7, 0, 0.3), cx - s * 0.15, cz + dz)
 			end
-			part(m, "Desk", Vector3.new(3, 0.3, 6), CFrame.new(cx + s * 3.1, 2.85, cz), { Color = rgb(140, 142, 148), Material = M.Metal })
-			for _, dz in { -2.7, 2.7 } do
-				part(m, "DeskLeg", Vector3.new(2.6, 2.7, 0.3), CFrame.new(cx + s * 3.1, 1.35, cz + dz), { Color = rgb(70, 72, 78) })
+			-- L-shaped desk: main run along the outer panel, return along the back.
+			part(m, "Desk", Vector3.new(2.6, 0.2, 7), CFrame.new(cx + s * 3.4, 2.9, cz), desk)
+			part(m, "Desk", Vector3.new(5, 0.2, 2.2), CFrame.new(cx - s * 0.4, 2.9, cz - 3.1), desk)
+			part(m, "DeskEnd", Vector3.new(2.4, 2.8, 0.2), CFrame.new(cx + s * 3.4, 1.4, cz + 3.4), dark)
+			part(m, "DeskEnd", Vector3.new(0.2, 2.8, 2), CFrame.new(cx - s * 2.8, 1.4, cz - 3.1), dark)
+			-- Two monitors, one still showing solar flux.
+			for i, dz in { -1.3, 1.3 } do
+				part(m, "MonitorStand", Vector3.new(0.4, 0.2, 0.8), CFrame.new(cx + s * 4.2, 3.1, cz + dz), dark)
+				part(m, "Monitor", Vector3.new(0.25, 1.5, 2.2), CFrame.new(cx + s * 4.2, 3.95, cz + dz), dark)
+				local screen = part(m, "Screen", Vector3.new(0.05, 1.2, 1.9), CFrame.new(cx + s * 4.05, 3.95, cz + dz),
+					{ Material = M.Neon, Color = if i == 1 then rgb(25, 45, 70) else rgb(60, 30, 15), CanCollide = false }) :: Part
+				if i == 2 then
+					B.label(screen, "SOL FLUX +14%", if s == 1 then Enum.NormalId.Left else Enum.NormalId.Right, rgb(255, 160, 90), Enum.Font.Code)
+				end
 			end
-			part(m, "Monitor", Vector3.new(0.3, 1.6, 2.4), CFrame.new(cx + s * 4, 3.8, cz), { Color = rgb(30, 30, 34) })
-			part(m, "Screen", Vector3.new(0.05, 1.3, 2.1), CFrame.new(cx + s * 3.825, 3.8, cz),
-				{ Material = M.Neon, Color = rgb(30, 60, 90), CanCollide = false })
-			chair(m, CFrame.new(cx, 0, cz) * CFrame.Angles(0, math.rad(-s * 90), 0), rgb(50, 55, 70))
+			part(m, "Keyboard", Vector3.new(0.6, 0.06, 1.6), CFrame.new(cx + s * 3, 3.03, cz), dark)
+			part(m, "Mug", Vector3.new(0.5, 0.4, 0.4), CFrame.new(cx + s * 2.6, 3.25, cz + 2.4) * CFrame.Angles(0, 0, math.pi / 2),
+				{ Shape = Enum.PartType.Cylinder, Color = rgb(200, 195, 185) })
+			for k = 1, 3 do
+				part(m, "Paper", Vector3.new(0.8, 0.02, 1.1),
+					CFrame.new(cx - s * rand:NextNumber(-1.5, 1.5), 3.01 + k * 0.021, cz - 3.1 + rand:NextNumber(-0.4, 0.4)) * CFrame.Angles(0, rand:NextNumber(0, math.pi), 0),
+					{ Color = rgb(235, 232, 222), CanCollide = false })
+			end
+			-- Chair pushed back at an angle, as if someone stood up fast.
+			chair(m, CFrame.new(cx + s * 0.6, 0, cz + rand:NextNumber(-1, 1)) * CFrame.Angles(0, math.rad(-s * 90) + rand:NextNumber(-0.7, 0.7), 0), rgb(45, 50, 65))
 		end
 	end
-	wallSign(m, w, -1, -18, 7.2, Vector2.new(6, 2.2), "SOLSTICE SOLUTIONS\nCLOSER TO THE SUN", rgb(225, 140, 50), rgb(30, 25, 20))
+	-- Filing cabinets by the far wall, copier, water cooler.
+	for _, sx in { -1, 1 } do
+		for k = 0, 2 do
+			local x = sx * (16.2 - k * 1.85)
+			part(m, "FilingCabinet", Vector3.new(1.8, 4.5, 2), CFrame.new(x, 2.25, -38.95), { Color = rgb(120, 124, 130), Material = M.Metal })
+			for d = 0, 2 do
+				part(m, "Drawer", Vector3.new(1.5, 0.05, 0.05), CFrame.new(x, 1.2 + d * 1.4, -37.925), dark)
+			end
+		end
+	end
+	part(m, "Copier", Vector3.new(3, 3.5, 2.2), CFrame.new(-6.5, 1.75, -38.8), { Color = rgb(190, 190, 185) })
+	part(m, "CopierLid", Vector3.new(2.6, 0.2, 1.8), CFrame.new(-6.5, 3.6, -38.8), dark)
+	part(m, "Cooler", Vector3.new(1.4, 3.6, 1.4), CFrame.new(-16.8, 1.8, -1.4), { Color = rgb(225, 225, 220) })
+	part(m, "Jug", Vector3.new(1.1, 1.1, 1.1), CFrame.new(-16.8, 4.15, -1.4), { Shape = Enum.PartType.Ball, Material = M.Glass, Color = rgb(150, 200, 255), Transparency = 0.3 })
+	wallSign(m, w, -1, -17.5, 7.6, Vector2.new(8, 2.6), "SOLAR FLARE MODEL v7\nPEAK PREDICTED: ???\nWHY IS IT GETTING CLOSER", rgb(230, 232, 234), rgb(40, 50, 90), Enum.Font.Cartoon)
+	wallSign(m, w, 1, -17.5, 7.6, Vector2.new(6, 2.2), "SOLSTICE SOLUTIONS\nCLOSER TO THE SUN", rgb(225, 140, 50), rgb(30, 25, 20))
 	B.panelGrid(m, w, L, h, 3, 4, p.light, 0.7)
 	return m
 end
@@ -264,24 +309,96 @@ local function medBay(): Model
 	return m
 end
 
--- Solar spectroscopy lab: benches of instruments and samples, notes left mid-sentence.
+-- Solar spectroscopy lab: two wet-lab islands, fume hoods, a spectrum chart, a deep freezer.
+local function microscope(m: Model, x: number, y: number, z: number, facing: number)
+	local white = { Color = rgb(225, 225, 220) }
+	local dark = { Color = rgb(40, 40, 44) }
+	part(m, "Microscope", Vector3.new(0.9, 0.15, 1.1), CFrame.new(x, y + 0.075, z), white)
+	part(m, "Microscope", Vector3.new(0.25, 1.3, 0.25), CFrame.new(x - facing * 0.3, y + 0.8, z), white)
+	part(m, "Microscope", Vector3.new(0.5, 0.35, 0.9), CFrame.new(x - facing * 0.05, y + 1.4, z) * CFrame.Angles(0, 0, facing * 0.3), white)
+	part(m, "Microscope", Vector3.new(0.15, 0.5, 0.15), CFrame.new(x + facing * 0.15, y + 0.7, z), dark)
+end
+
 local function laboratory(): Model
 	local m = B.newRoom("Laboratory", { Weight = 2, MinRoom = 3 })
-	local w, L, h, p = 28, 40, 11, PAL.lab
+	local w, L, h, p = 30, 40, 12, PAL.lab
 	B.shell(m, w, L, h, p)
-	for _, x in { -7, 7 } do
-		part(m, "Bench", Vector3.new(4, 3, 22), CFrame.new(x, 1.5, -20), { Color = rgb(150, 155, 160), Material = M.Metal })
-		part(m, "BenchTop", Vector3.new(4, 0.2, 22), CFrame.new(x, 3.1, -20), { Color = rgb(40, 42, 46), Material = M.Slate })
-		for _, z in { -12, -18, -24, -28 } do
-			-- Sample vials still glowing faintly orange.
-			part(m, "Vial", Vector3.new(1, 0.6, 0.6), CFrame.new(x - 1, 3.7, z) * CFrame.Angles(0, 0, math.pi / 2),
-				{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = rgb(255, 160, 60), Transparency = 0.3 })
+	local rand = Random.new(17)
+	local steel = { Color = rgb(150, 155, 160), Material = M.Metal }
+	local slate = { Color = rgb(35, 37, 42), Material = M.Slate }
+	local liquid = { rgb(255, 150, 60), rgb(90, 160, 220), rgb(120, 200, 120), rgb(230, 220, 200) }
+	for _, cx in { -7.5, 7.5 } do
+		local s = math.sign(cx)
+		part(m, "BenchCabinet", Vector3.new(4, 3, 20), CFrame.new(cx, 1.5, -18), { Color = rgb(200, 202, 205), Material = M.SmoothPlastic })
+		for k = 0, 4 do
+			part(m, "CabinetSeam", Vector3.new(4.02, 2.4, 0.06), CFrame.new(cx, 1.5, -10 - k * 4), { Color = rgb(150, 152, 156) })
 		end
-		part(m, "Instrument", Vector3.new(1.6, 1.4, 2), CFrame.new(x + 0.8, 3.9, -15), { Color = rgb(60, 62, 68), Material = M.Metal })
-		part(m, "Instrument", Vector3.new(1.6, 2, 1.6), CFrame.new(x + 0.8, 4.2, -26), { Color = rgb(200, 200, 195) })
+		part(m, "BenchTop", Vector3.new(4.3, 0.25, 20.3), CFrame.new(cx, 3.125, -18), slate)
+		-- Reagent rack down the middle of the bench.
+		for _, z in { -10, -18, -26 } do
+			part(m, "RackPost", Vector3.new(0.2, 3.2, 0.2), CFrame.new(cx, 4.85, z), steel)
+		end
+		for _, y in { 5.1, 6.4 } do
+			part(m, "RackShelf", Vector3.new(0.8, 0.12, 16.4), CFrame.new(cx, y, -18), steel)
+			for z = -10.6, -25.4, -0.9 do
+				if rand:NextNumber() < 0.7 then
+					local bh = rand:NextNumber(0.4, 0.8)
+					part(m, "Bottle", Vector3.new(bh, 0.35, 0.35), CFrame.new(cx + rand:NextNumber(-0.15, 0.15), y + 0.06 + bh / 2, z) * CFrame.Angles(0, 0, math.pi / 2),
+						{ Shape = Enum.PartType.Cylinder, Color = liquid[rand:NextInteger(1, #liquid)], Material = M.Glass, Transparency = 0.25 })
+				end
+			end
+		end
+		-- Aisle side: microscopes and beaker clusters. Outer side: sinks and a centrifuge.
+		local inner, outer = cx - s * 1.3, cx + s * 1.3
+		for _, z in { -14, -22 } do
+			microscope(m, inner, 3.25, z, -s)
+		end
+		for _, z in { -10.5, -18, -25.5 } do
+			for k = 0, 2 do
+				local bh = rand:NextNumber(0.5, 1)
+				local glow = k == 0 and z == -18
+				part(m, "Beaker", Vector3.new(bh, 0.55, 0.55), CFrame.new(inner + (k - 1) * 0.05, 3.25 + bh / 2, z + (k - 1) * 0.65) * CFrame.Angles(0, 0, math.pi / 2),
+					{ Shape = Enum.PartType.Cylinder, Color = if glow then rgb(255, 140, 50) else liquid[rand:NextInteger(1, #liquid)],
+						Material = if glow then M.Neon else M.Glass, Transparency = if glow then 0 else 0.3 })
+			end
+		end
+		for _, z in { -12, -24 } do
+			part(m, "Sink", Vector3.new(1.6, 0.03, 1.2), CFrame.new(outer, 3.265, z), { Color = rgb(20, 22, 24) })
+			part(m, "Faucet", Vector3.new(0.15, 0.9, 0.15), CFrame.new(outer + s * 0.65, 3.7, z), steel)
+			part(m, "Spout", Vector3.new(0.6, 0.12, 0.12), CFrame.new(outer + s * 0.4, 4.1, z), steel)
+		end
+		part(m, "Centrifuge", Vector3.new(0.9, 1.4, 1.4), CFrame.new(outer, 3.7, -18) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(215, 215, 210) })
 	end
-	wallSign(m, w, 1, -20, 6, Vector2.new(8, 3.5), "656.3 nm ... ?\nCORONAL OUTPUT x14\nTHIS IS NOT POSSIBLE", rgb(225, 228, 230), rgb(40, 50, 90), Enum.Font.Cartoon)
-	wallSign(m, w, -1, -20, 8.5, Vector2.new(7, 1.2), "SOLAR SPECTROSCOPY LAB")
+	-- Fume hoods along the left wall.
+	for _, z in { -10, -22 } do
+		local x = -w / 2 + 1.3
+		part(m, "HoodBase", Vector3.new(2.6, 3, 5), CFrame.new(x, 1.5, z), { Color = rgb(200, 202, 205) })
+		part(m, "HoodBody", Vector3.new(2.6, 4.2, 0.3), CFrame.new(x, 5.1, z - 2.35), { Color = rgb(190, 192, 195) })
+		part(m, "HoodBody", Vector3.new(2.6, 4.2, 0.3), CFrame.new(x, 5.1, z + 2.35), { Color = rgb(190, 192, 195) })
+		part(m, "HoodTop", Vector3.new(2.6, 1, 5), CFrame.new(x, 7.7, z), { Color = rgb(190, 192, 195) })
+		part(m, "HoodSash", Vector3.new(0.08, 3.4, 4.4), CFrame.new(x + 1.26, 5.1, z),
+			{ Color = rgb(190, 215, 225), Material = M.Glass, Transparency = 0.6, CastShadow = false })
+		B.panel(m, x - 0.2, 7.2, z, rgb(220, 235, 245), 0.4, 6, Vector3.new(1.4, 0.15, 3.6))
+		part(m, "Flask", Vector3.new(0.9, 0.7, 0.7), CFrame.new(x - 0.2, 3.45, z) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(255, 150, 60), Material = M.Glass, Transparency = 0.25 })
+	end
+	-- Spectrum chart with one line that shouldn't be there.
+	local chart = B.onWall(m, w, 1, -18, 6.5, Vector2.new(10, 4.2), 0.1, "Whiteboard", { Color = rgb(230, 232, 234) }) :: Part
+	local colors = { rgb(140, 60, 160), rgb(60, 70, 200), rgb(60, 160, 210), rgb(70, 180, 80), rgb(230, 210, 60), rgb(240, 140, 50), rgb(210, 50, 50) }
+	for i, c in colors do
+		part(m, "Spectrum", Vector3.new(0.05, 1.2, 1.1), CFrame.new(w / 2 - 0.125, 7.2, -18 - 3.85 + (i - 1) * 1.1), { Color = c, Material = M.Neon, CanCollide = false })
+	end
+	part(m, "AbsorptionLine", Vector3.new(0.06, 1.4, 0.12), CFrame.new(w / 2 - 0.13, 7.2, -16.1), { Color = rgb(10, 10, 10), CanCollide = false })
+	B.label(chart, "\n\n\n656.3 nm ... ?  CORONAL OUTPUT x14  THIS IS NOT POSSIBLE", Enum.NormalId.Left, rgb(40, 50, 90), Enum.Font.Cartoon)
+	-- Deep freezer and eyewash station near the far wall.
+	part(m, "Freezer", Vector3.new(2.5, 8, 3.2), CFrame.new(w / 2 - 1.25, 4, -35), { Color = rgb(210, 212, 215), Material = M.Metal })
+	local display = part(m, "FreezerDisplay", Vector3.new(0.05, 0.6, 1.4), CFrame.new(w / 2 - 2.525, 6.5, -35), { Material = M.Neon, Color = rgb(30, 50, 70), CanCollide = false }) :: Part
+	B.label(display, "-80 C", Enum.NormalId.Left, rgb(150, 210, 255), Enum.Font.Code)
+	part(m, "Eyewash", Vector3.new(1.4, 0.4, 1.4), CFrame.new(-w / 2 + 0.9, 3.6, -35), { Color = rgb(60, 160, 80) })
+	part(m, "EyewashPipe", Vector3.new(0.2, 3.4, 0.2), CFrame.new(-w / 2 + 0.9, 1.7, -35), steel)
+	wallSign(m, w, -1, -35, 5.6, Vector2.new(2.2, 0.7), "EYEWASH", rgb(40, 140, 70), rgb(240, 250, 240))
+	wallSign(m, w, -1, -16, 10, Vector2.new(7, 1.1), "SOLAR SPECTROSCOPY LAB")
 	B.panelGrid(m, w, L, h, 2, 4, p.light, 0.7)
 	return m
 end
@@ -459,33 +576,77 @@ local function promenade(): Model
 	return m
 end
 
--- Cryo bay: rows of stasis pods. Some are still occupied. One is open.
+-- Cryo bay: tilted stasis pods with occupants. One pod is open, and footprints lead away from it.
 local function cryo(): Model
 	local m = B.newRoom("CryoBay", { Weight = 2, MinRoom = 12 })
-	local w, L, h, p = 28, 44, 12, PAL.cryo
+	local w, L, h, p = 30, 46, 13, PAL.cryo
 	B.shell(m, w, L, h, p)
+	local metal = { Color = rgb(70, 78, 90), Material = M.Metal }
+	local frost = rgb(200, 225, 240)
 	local i = 0
+	local openPod
 	for _, side in { -1, 1 } do
-		for _, z in { -6, -14, -22, -30, -38 } do
+		for c = -6, -38, -6.4 do
 			i += 1
-			local x = side * (w / 2 - 2.5)
-			local base = part(m, "PodBase", Vector3.new(3, 0.6, 3), CFrame.new(x, 0.3, z), { Color = rgb(70, 78, 90), Material = M.Metal }) :: Part
-			part(m, "PodCap", Vector3.new(3, 0.6, 3), CFrame.new(x, 7.9, z), { Color = rgb(70, 78, 90), Material = M.Metal })
-			if i == 7 then
-				-- The open pod: no glass, frost on the floor in front of it.
-				part(m, "Frost", Vector3.new(3, 0.05, 3), CFrame.new(x - side * 3, 0.025, z), { Color = rgb(200, 225, 240), Material = M.Ice, CanCollide = false })
+			local x = side * 11.5
+			local plinth = part(m, "PodBase", Vector3.new(3.4, 0.8, 3.4), CFrame.new(x, 0.4, c), metal) :: Part
+			part(m, "PodRing", Vector3.new(0.12, 3.2, 3.2), CFrame.new(x, 0.86, c) * CFrame.Angles(0, 0, math.pi / 2),
+				{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(70, 120, 170), CanCollide = false })
+			local tilt = CFrame.new(x, 0.8, c) * CFrame.Angles(0, 0, side * -0.15)
+			part(m, "PodBack", Vector3.new(0.6, 7.6, 3), tilt * CFrame.new(side * 1.4, 3.8, 0), metal)
+			part(m, "PodCap", Vector3.new(3.2, 0.6, 3.2), tilt * CFrame.new(0, 7.9, 0), metal)
+			if i == 8 then
+				openPod = Vector3.new(x, 0, c)
+				part(m, "Frost", Vector3.new(4, 0.05, 4), CFrame.new(x - side * 3, 0.025, c), { Color = frost, Material = M.Ice, CanCollide = false })
 			else
-				part(m, "PodGlass", Vector3.new(7, 2.6, 2.6), CFrame.new(x, 4.1, z) * CFrame.Angles(0, 0, math.pi / 2),
-					{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = rgb(150, 200, 230), Transparency = 0.6, CastShadow = false })
-				if i % 3 ~= 0 then
-					part(m, "Occupant", Vector3.new(1, 4.5, 1), CFrame.new(x, 3.1, z), { Color = rgb(55, 62, 72), CanCollide = false })
+				part(m, "PodGlass", Vector3.new(7.2, 2.8, 2.8), tilt * CFrame.new(0, 4, 0) * CFrame.Angles(0, 0, math.pi / 2),
+					{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = rgb(170, 210, 235), Transparency = 0.55, CastShadow = false })
+				part(m, "Frost", Vector3.new(7, 2.85, 2.85), tilt * CFrame.new(0, 4, 0) * CFrame.Angles(0, 0, math.pi / 2),
+					{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = frost, Transparency = 0.85, CastShadow = false, CanCollide = false })
+				if i % 4 ~= 0 then
+					part(m, "Occupant", Vector3.new(1, 4.6, 1.1), tilt * CFrame.new(side * 0.4, 3.3, 0), { Color = rgb(55, 62, 72), CanCollide = false })
+					part(m, "OccupantHead", Vector3.new(0.9, 0.9, 0.9), tilt * CFrame.new(side * 0.4, 6.1, 0), { Shape = Enum.PartType.Ball, Color = rgb(60, 66, 76), CanCollide = false })
 				end
 			end
-			glowing(base, rgb(120, 180, 255), 6, 0.6)
+			-- Vitals console beside each pod.
+			part(m, "PodConsole", Vector3.new(0.8, 1.8, 1.2), CFrame.new(side * 9.6, 0.9, c + 2.4), metal)
+			local screen = part(m, "PodScreen", Vector3.new(0.05, 0.6, 0.9), CFrame.new(side * 9.175, 1.4, c + 2.4),
+				{ Material = M.Neon, Color = if i == 8 then rgb(70, 20, 15) else rgb(15, 50, 30), CanCollide = false }) :: Part
+			B.label(screen, if i == 8 then "OPEN" else "VITALS --", if side == -1 then Enum.NormalId.Right else Enum.NormalId.Left,
+				if i == 8 then rgb(255, 90, 70) else rgb(120, 230, 150), Enum.Font.Code)
+			local glow = Instance.new("PointLight")
+			glow.Color = rgb(120, 180, 255)
+			glow.Range = 7
+			glow.Brightness = 0.5
+			glow.Parent = plinth
 		end
 	end
-	endSign(m, -L, 1, 0, 10.8, Vector2.new(10, 1.2), "CRYO STASIS - DO NOT WAKE")
-	B.panelGrid(m, w, L, h, 1, 5, p.light, 0.6)
+	-- Frosty footprints from the open pod toward the exit.
+	if openPod then
+		local from = openPod + Vector3.new(-3.5, 0, 0)
+		local to = Vector3.new(1, 0, -L + 4)
+		for k = 0, 13 do
+			local t = k / 13
+			local pos = from:Lerp(to, t)
+			local dir = (to - from).Unit
+			local offset = Vector3.new(-dir.Z, 0, dir.X) * (if k % 2 == 0 then 0.35 else -0.35)
+			part(m, "Footprint", Vector3.new(0.45, 0.03, 0.8), CFrame.lookAt(pos + offset + Vector3.new(0, 0.015, 0), pos + offset + dir + Vector3.new(0, 0.015, 0)),
+				{ Color = frost, Material = M.Ice, CanCollide = false, Transparency = 0.2 })
+		end
+	end
+	-- Frosted coolant pipes overhead, glowing trench lines along the floor.
+	for _, sx in { -1, 1 } do
+		part(m, "CoolantPipe", Vector3.new(L, 0.8, 0.8), CFrame.new(sx * 6, h - 1.2, -L / 2) * CFrame.Angles(0, math.pi / 2, 0),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(190, 210, 225), Material = M.Ice })
+		part(m, "TrenchLight", Vector3.new(0.5, 0.03, L - 6), CFrame.new(sx * 3, 0.015, -L / 2), { Material = M.Neon, Color = rgb(40, 80, 120), CanCollide = false })
+	end
+	-- Main stasis console near the exit.
+	part(m, "MainConsole", Vector3.new(4, 3, 2), CFrame.new(-6.5, 1.5, -L + 2.5), metal)
+	local main = part(m, "MainScreen", Vector3.new(3.4, 1.6, 0.05), CFrame.new(-6.5, 4, -L + 3.3) * CFrame.Angles(-0.3, 0, 0),
+		{ Material = M.Neon, Color = rgb(20, 35, 50), CanCollide = false }) :: Part
+	B.label(main, "STASIS 11/12\nPOD 08: OPEN", Enum.NormalId.Back, rgb(150, 210, 255), Enum.Font.Code)
+	endSign(m, -L, 1, 0, 11, Vector2.new(10, 1.2), "CRYO STASIS - DO NOT WAKE")
+	B.panelGrid(m, w, L, h, 1, 5, p.light, 0.5)
 	return m
 end
 
@@ -562,48 +723,145 @@ local function coolant(): Model
 	return m
 end
 
--- EVA suits standing in their racks. One slot is empty.
+-- EVA suit storage: lit alcoves with full suits. One alcove is empty, its suit lies on the floor.
+local function suit(m: Model, x: number, z: number, side: number, standing: boolean)
+	local white = { Color = rgb(215, 215, 208), Material = M.Fabric }
+	local grey = { Color = rgb(150, 152, 155), Material = M.Metal }
+	if standing then
+		for _, dz in { -0.4, 0.4 } do
+			part(m, "SuitLeg", Vector3.new(0.65, 2.2, 0.65), CFrame.new(x, 1.1, z + dz), white)
+			part(m, "SuitBoot", Vector3.new(0.9, 0.35, 0.75), CFrame.new(x - side * 0.1, 0.175, z + dz), grey)
+		end
+		part(m, "SuitTorso", Vector3.new(1.1, 2, 1.6), CFrame.new(x, 3.2, z), white)
+		part(m, "SuitPack", Vector3.new(0.6, 1.6, 1.4), CFrame.new(x + side * 0.85, 3.3, z), grey)
+		for _, dz in { -1.05, 1.05 } do
+			part(m, "SuitArm", Vector3.new(0.5, 1.8, 0.5), CFrame.new(x, 3.1, z + dz), white)
+		end
+		part(m, "SuitHelmet", Vector3.new(1.5, 1.5, 1.5), CFrame.new(x, 4.95, z), { Shape = Enum.PartType.Ball, Color = rgb(225, 225, 220) })
+		part(m, "SuitVisor", Vector3.new(0.1, 0.7, 1), CFrame.new(x - side * 0.72, 5, z), { Color = rgb(200, 160, 60), Material = M.Glass, Reflectance = 0.5 })
+	else
+		part(m, "SuitTorso", Vector3.new(2, 1.1, 1.6), CFrame.new(x, 0.55, z) * CFrame.Angles(0, 0.4, 0), white)
+		part(m, "SuitLeg", Vector3.new(2.2, 0.65, 0.65), CFrame.new(x - side * 1.9, 0.33, z + 0.6) * CFrame.Angles(0, 0.6, 0), white)
+		part(m, "SuitHelmet", Vector3.new(1.5, 1.5, 1.5), CFrame.new(x - side * 1.5, 0.75, z - 2.2), { Shape = Enum.PartType.Ball, Color = rgb(225, 225, 220) })
+	end
+end
+
 local function suitStorage(): Model
 	local m = B.newRoom("SuitStorage", { Weight = 1, MinRoom = 8 })
-	local w, L, h, p = 20, 32, 10, PAL.hull
+	local w, L, h, p = 22, 34, 11, PAL.hull
 	B.shell(m, w, L, h, p)
+	local fin = { Color = rgb(70, 74, 82), Material = M.Metal }
 	local i = 0
 	for _, side in { -1, 1 } do
-		for z = -4, -28, -4 do
+		for c = -5, -29, -4 do
 			i += 1
-			part(m, "Rack", Vector3.new(0.2, 7, 3), CFrame.new(side * (w / 2 - 0.1), 3.5, z), { Color = rgb(60, 62, 68), Material = M.Metal })
-			if i ~= 9 then
-				local x = side * (w / 2 - 1.2)
-				part(m, "Suit", Vector3.new(1.4, 4.5, 2), CFrame.new(x, 2.75, z), { Color = rgb(205, 205, 198), Material = M.Fabric })
-				part(m, "Helmet", Vector3.new(1.6, 1.6, 1.6), CFrame.new(x, 5.8, z), { Shape = Enum.PartType.Ball, Color = rgb(215, 215, 210) })
-				part(m, "Visor", Vector3.new(0.1, 0.8, 1), CFrame.new(x - side * 0.75, 5.85, z), { Color = rgb(20, 22, 28), Material = M.Glass, Reflectance = 0.3 })
+			for _, dz in { -1.85, 1.85 } do
+				part(m, "AlcoveFin", Vector3.new(1.8, 8, 0.3), CFrame.new(side * (w / 2 - 0.9), 4, c + dz), fin)
+			end
+			part(m, "AlcoveTop", Vector3.new(1.8, 0.4, 3.4), CFrame.new(side * (w / 2 - 0.9), 8.2, c), fin)
+			local backlight = part(m, "Lamp", Vector3.new(0.1, 6, 0.4), CFrame.new(side * (w / 2 - 0.05), 4, c),
+				{ Material = M.Neon, Color = if i == 4 then rgb(140, 30, 25) else rgb(50, 80, 110), CanCollide = false }) :: Part
+			local glow = Instance.new("PointLight")
+			glow.Range = 6
+			glow.Brightness = 0.4
+			glow.Color = if i == 4 then rgb(255, 60, 50) else rgb(120, 170, 220)
+			glow.Parent = backlight
+			if i == 9 then
+				suit(m, side * 6.5, c, side, false)
+			else
+				suit(m, side * (w / 2 - 1.4), c, side, true)
 			end
 		end
 	end
+	-- Oxygen tanks by the door, benches by the far wall.
+	for k = 0, 2 do
+		part(m, "O2Tank", Vector3.new(3.5, 0.8, 0.8), CFrame.new(-w / 2 + 0.6 + k * 0.9, 1.75, -1.5) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(60, 120, 70), Material = M.Metal })
+	end
+	for _, sx in { -1, 1 } do
+		part(m, "Bench", Vector3.new(5, 1.4, 1.6), CFrame.new(sx * 6, 0.7, -32.6), { Color = rgb(70, 74, 82), Material = M.Metal })
+	end
+	wallSign(m, w, -1, -17, 9.6, Vector2.new(7, 1), "EVA PREP - CHECK SEALS TWICE")
+	endSign(m, -L, 1, -6.5, 5, Vector2.new(4, 2.4), "SUIT STATUS\n07 MISSING\n09 RECOVERED?\n12 MISSING", rgb(25, 28, 30), rgb(255, 120, 90))
 	B.panelGrid(m, w, L, h, 1, 4, p.light, 0.6)
 	return m
 end
 
--- Hydroponics: planter beds of dead crops under purple grow lights.
+-- Hydroponics: troughs of dead crops under hanging grow-light bars. One plant is still alive.
 local function hydroponics(): Model
 	local m = B.newRoom("Hydroponics", { Weight = 2, MinRoom = 6 })
-	local w, L, h, p = 28, 40, 12, PAL.hydro
+	local w, L, h, p = 30, 44, 13, PAL.hydro
 	B.shell(m, w, L, h, p)
 	local rand = Random.new(21)
-	for _, x in { -10.5, -5.5, 5.5, 10.5 } do
-		part(m, "Bed", Vector3.new(3, 1.5, 26), CFrame.new(x, 0.75, -20), { Color = rgb(80, 86, 82), Material = M.Metal })
-		part(m, "Soil", Vector3.new(2.6, 0.1, 25.6), CFrame.new(x, 1.55, -20), { Color = rgb(60, 45, 32), Material = M.Ground })
-		for _ = 1, 8 do
-			local sh = rand:NextNumber(0.8, 2.4)
-			part(m, "Plant", Vector3.new(0.2, sh, 0.2), CFrame.new(x + rand:NextNumber(-1, 1), 1.6 + sh / 2, rand:NextNumber(-32, -8))
-				* CFrame.Angles(rand:NextNumber(-0.3, 0.3), 0, rand:NextNumber(-0.3, 0.3)),
-				{ Color = rgb(90, 85, 50), CanCollide = false })
+	local frame = { Color = rgb(85, 92, 88), Material = M.Metal }
+	local pipeColor = rgb(170, 175, 172)
+	local purple = rgb(200, 120, 255)
+	for bed, x in { -10.5, -5.5, 5.5, 10.5 } do
+		part(m, "Trough", Vector3.new(3, 1.6, 24), CFrame.new(x, 0.8, -20), frame)
+		part(m, "Soil", Vector3.new(2.6, 0.1, 23.6), CFrame.new(x, 1.65, -20), { Color = rgb(55, 42, 30), Material = M.Ground })
+		-- Irrigation pipe along the trough edge with drip heads.
+		part(m, "Irrigation", Vector3.new(24, 0.25, 0.25), CFrame.new(x + 1.35, 1.85, -20) * CFrame.Angles(0, math.pi / 2, 0),
+			{ Shape = Enum.PartType.Cylinder, Color = pipeColor, Material = M.Metal })
+		for z = -9, -31, -4 do
+			part(m, "Dripper", Vector3.new(0.15, 0.3, 0.15), CFrame.new(x + 1.35, 1.6, z), { Color = rgb(40, 40, 44) })
 		end
-		for _, z in { -10, -20, -30 } do
-			B.panel(m, x, h, z, p.light, 0.5, 14, Vector3.new(2.4, 0.3, 6))
+		-- Plants: a stalk with a couple of drooping leaves each.
+		for k = 1, 10 do
+			local z = -9.5 - (k - 1) * 2.3 + rand:NextNumber(-0.4, 0.4)
+			local alive = bed == 3 and k == 6
+			local stem = rand:NextNumber(1.2, 2.6)
+			local color = if alive then rgb(70, 190, 90) else (if rand:NextNumber() < 0.5 then rgb(95, 80, 50) else rgb(85, 85, 50))
+			local base = CFrame.new(x + rand:NextNumber(-0.7, 0.4), 1.7, z) * CFrame.Angles(rand:NextNumber(-0.25, 0.25), 0, rand:NextNumber(-0.25, 0.25))
+			local stalk = part(m, "Plant", Vector3.new(0.18, stem, 0.18), base * CFrame.new(0, stem / 2, 0), { Color = color, CanCollide = false })
+			for leaf = 1, 2 do
+				local yaw = rand:NextNumber(0, math.pi * 2)
+				part(m, "Leaf", Vector3.new(0.9, 0.05, 0.4), base * CFrame.new(0, stem * (0.45 + leaf * 0.2), 0) * CFrame.Angles(0, yaw, 0)
+					* CFrame.new(0.45, 0, 0) * CFrame.Angles(0, 0, if alive then 0.2 else -0.7),
+					{ Color = color, Material = M.Grass, CanCollide = false, CastShadow = false })
+			end
+			if alive then
+				local glow = Instance.new("PointLight")
+				glow.Color = rgb(120, 255, 140)
+				glow.Range = 7
+				glow.Brightness = 0.6
+				glow.Parent = stalk
+			end
+		end
+		-- Grow-light bar hanging on two chains.
+		local bar = part(m, "Lamp", Vector3.new(0.6, 0.25, 22), CFrame.new(x, 8, -20), { Material = M.Neon, Color = purple:Lerp(Color3.new(0, 0, 0), 0.4), CanCollide = false }) :: Part
+		local light = Instance.new("SurfaceLight")
+		light.Face = Enum.NormalId.Bottom
+		light.Color = purple
+		light.Range = 12
+		light.Angle = 100
+		light.Brightness = 0.6
+		light.Parent = bar
+		for _, z in { -12, -28 } do
+			part(m, "Chain", Vector3.new(0.1, h - 8.125, 0.1), CFrame.new(x, 8.125 + (h - 8.125) / 2, z), { Color = rgb(120, 122, 126), Material = M.Metal })
 		end
 	end
-	wallSign(m, w, -1, -20, 8, Vector2.new(7, 1.2), "HYDROPONICS - CROP CYCLE 412")
+	-- Main feed pipe across the far end, water tanks either side of the exit.
+	for _, sx in { -1, 1 } do
+		part(m, "WaterTank", Vector3.new(6, 3.5, 3.5), CFrame.new(sx * 9.5, 3, -40.25) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(150, 170, 175), Material = M.Metal })
+		part(m, "TankBand", Vector3.new(0.3, 3.7, 3.7), CFrame.new(sx * 9.5, 4.5, -40.25) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(90, 100, 104), Material = M.Metal })
+	end
+	part(m, "FeedPipe", Vector3.new(w - 1, 0.5, 0.5), CFrame.new(0, 11, -42.8), { Shape = Enum.PartType.Cylinder, Color = pipeColor, Material = M.Metal })
+	-- Seed tray shelves on the left wall, nutrient controls on the right.
+	for _, y in { 2, 4, 6 } do
+		B.onWall(m, w, -1, -20, y, Vector2.new(16, 0.15), 1.2, "SeedShelf", frame)
+		for z = -13, -27, -2 do
+			part(m, "SeedTray", Vector3.new(1, 0.25, 1.4), CFrame.new(-w / 2 + 0.6, y + 0.2, z), { Color = rgb(35, 36, 38) })
+			part(m, "Sprouts", Vector3.new(0.8, 0.1, 1.2), CFrame.new(-w / 2 + 0.6, y + 0.375, z), { Color = rgb(90, 90, 55), Material = M.Grass, CanCollide = false })
+		end
+	end
+	local screen = B.onWall(m, w, 1, -20, 6, Vector2.new(5, 3), 0.2, "Screen", { Color = rgb(10, 30, 15), Material = M.Neon }) :: Part
+	B.label(screen, "NUTRIENT FLOW: 0%\nCO2: 0.04%\nLIGHT CYCLE: ERR", Enum.NormalId.Left, rgb(120, 230, 140), Enum.Font.Code)
+	wallSign(m, w, 1, -20, 8.6, Vector2.new(7, 1.1), "HYDROPONICS - CROP CYCLE 412")
+	for _, z in { -4, -38 } do
+		B.panel(m, 0, h, z, rgb(220, 230, 225), 0.5, 16)
+	end
 	return m
 end
 
@@ -820,24 +1078,70 @@ local function dormitory(): Model
 	return m
 end
 
--- Laundry: rows of machines, one still has clothes in it.
+-- Crew laundry: stacked machines, one door hanging open, folded Solstice uniforms, a hanging rail.
 local function laundry(): Model
 	local m = B.newRoom("Laundry", { Weight = 1, MinRoom = 6 })
-	local w, L, h, p = 20, 24, 10, PAL.hygiene
+	local w, L, h, p = 22, 28, 10, PAL.hygiene
 	B.shell(m, w, L, h, p)
-	for z = -3, -21, -3 do
+	local white = { Color = rgb(215, 215, 210) }
+	local steel = { Color = rgb(160, 162, 166), Material = M.Metal }
+	local dark = { Color = rgb(30, 32, 36) }
+	local uniform = rgb(200, 110, 40)
+	local i = 0
+	for z = -3.5, -21.5, -3 do
 		for _, y in { 1.5, 4.5 } do
-			part(m, "Washer", Vector3.new(2.6, 3, 2.6), CFrame.new(-w / 2 + 1.3, y, z), { Color = rgb(215, 215, 210) })
-			part(m, "WasherDoor", Vector3.new(0.1, 1.8, 1.8), CFrame.new(-w / 2 + 2.65, y + 0.1, z),
-				{ Shape = Enum.PartType.Cylinder, Color = rgb(30, 35, 40), Material = M.Glass })
+			i += 1
+			local x = -w / 2 + 1.3
+			part(m, "Washer", Vector3.new(2.6, 3, 2.6), CFrame.new(x, y, z), white)
+			part(m, "ControlStrip", Vector3.new(0.05, 0.35, 2.2), CFrame.new(x + 1.325, y + 1.2, z), dark)
+			part(m, "StatusLight", Vector3.new(0.05, 0.12, 0.12), CFrame.new(x + 1.35, y + 1.2, z + 0.8),
+				{ Material = M.Neon, Color = if i % 3 == 0 then rgb(220, 60, 50) else rgb(50, 60, 55), CanCollide = false })
+			if i == 5 then
+				-- Door hanging open, clothes spilled on the floor.
+				part(m, "DoorRing", Vector3.new(0.15, 2, 2), CFrame.new(x + 1.6, y - 0.1, z + 1.9) * CFrame.Angles(0, -1.2, 0),
+					{ Shape = Enum.PartType.Cylinder, Color = rgb(160, 162, 166), Material = M.Metal })
+				part(m, "DoorHole", Vector3.new(0.05, 1.7, 1.7), CFrame.new(x + 1.325, y - 0.1, z), { Shape = Enum.PartType.Cylinder, Color = rgb(15, 15, 18) })
+				for k, c in { uniform, rgb(90, 95, 110), uniform, rgb(200, 200, 195) } do
+					part(m, "Clothes", Vector3.new(1.1, 0.35, 0.9), CFrame.new(x + 2.3 + k * 0.6, 0.175, z + (k % 2) * 0.7 - 0.3) * CFrame.Angles(0, k, 0),
+						{ Color = c, Material = M.Fabric, CanCollide = false })
+				end
+			else
+				part(m, "DoorRing", Vector3.new(0.15, 2, 2), CFrame.new(x + 1.375, y - 0.1, z), { Shape = Enum.PartType.Cylinder, Color = rgb(160, 162, 166), Material = M.Metal })
+				part(m, "DoorGlass", Vector3.new(0.1, 1.6, 1.6), CFrame.new(x + 1.5, y - 0.1, z), { Shape = Enum.PartType.Cylinder, Color = rgb(25, 30, 36), Material = M.Glass, Reflectance = 0.2 })
+			end
 		end
 	end
-	part(m, "FoldingTable", Vector3.new(3, 0.2, 10), CFrame.new(6.5, 3, -12), { Color = rgb(200, 200, 195) })
-	for _, dz in { -4.5, 4.5 } do
-		part(m, "TableLeg", Vector3.new(2.6, 2.9, 0.3), CFrame.new(6.5, 1.45, -12 + dz), { Color = rgb(90, 92, 96), Material = M.Metal })
+	-- Detergent shelf above the machines.
+	B.onWall(m, w, -1, -12.5, 7.4, Vector2.new(14, 0.2), 1, "Shelf", steel)
+	for z = -6.5, -18.5, -1.5 do
+		part(m, "Detergent", Vector3.new(0.6, 0.9, 0.5), CFrame.new(-w / 2 + 0.5, 7.95, z), { Color = if z % 3 == 0 then rgb(60, 120, 190) else rgb(230, 230, 225) })
 	end
-	part(m, "Basket", Vector3.new(2, 1.4, 1.5), CFrame.new(7, 0.7, -20), { Color = rgb(70, 100, 140), Material = M.Plastic })
-	wallSign(m, w, 1, -12, 6.5, Vector2.new(6, 1.4), "DO NOT LEAVE CLOTHES UNATTENDED")
+	-- Folding counter with stacks of folded uniforms and baskets.
+	part(m, "Counter", Vector3.new(3, 3, 10), CFrame.new(w / 2 - 1.5, 1.5, -10), { Color = rgb(190, 192, 195) })
+	part(m, "CounterTop", Vector3.new(3.2, 0.15, 10.2), CFrame.new(w / 2 - 1.6, 3.075, -10), steel)
+	for k = 0, 2 do
+		for layer = 0, 3 do
+			part(m, "FoldedUniform", Vector3.new(1.3, 0.25, 1), CFrame.new(w / 2 - 1.6, 3.275 + layer * 0.25, -7 - k * 1.6),
+				{ Color = if (k + layer) % 3 == 0 then rgb(90, 95, 110) else uniform, Material = M.Fabric })
+		end
+	end
+	part(m, "Basket", Vector3.new(2, 1.2, 1.5), CFrame.new(w / 2 - 1.5, 3.75, -13), { Color = rgb(70, 100, 140), Material = M.Plastic })
+	-- Hanging rail with uniforms.
+	for _, z in { -19, -26 } do
+		part(m, "RailPost", Vector3.new(0.2, 6.2, 0.2), CFrame.new(w / 2 - 1.5, 3.1, z), steel)
+	end
+	part(m, "Rail", Vector3.new(0.15, 0.15, 7), CFrame.new(w / 2 - 1.5, 6.1, -22.5), steel)
+	for k = 0, 4 do
+		part(m, "HangingUniform", Vector3.new(0.3, 3, 1.3), CFrame.new(w / 2 - 1.5, 4.5, -20.3 - k * 1.1) * CFrame.Angles(0, 0.15 * (k % 2), 0),
+			{ Color = if k == 2 then rgb(90, 95, 110) else uniform, Material = M.Fabric, CanCollide = false })
+	end
+	-- Laundry cart.
+	part(m, "Cart", Vector3.new(2, 1.6, 3), CFrame.new(5.5, 1.2, -22), { Color = rgb(120, 125, 130), Material = M.Metal })
+	for _, o in { Vector3.new(-0.8, 0, -1.2), Vector3.new(0.8, 0, -1.2), Vector3.new(-0.8, 0, 1.2), Vector3.new(0.8, 0, 1.2) } do
+		part(m, "Wheel", Vector3.new(0.2, 0.4, 0.4), CFrame.new(5.5 + o.X, 0.2, -22 + o.Z), { Shape = Enum.PartType.Cylinder, Color = rgb(30, 30, 30) })
+	end
+	part(m, "Drain", Vector3.new(1.4, 0.04, 1.4), CFrame.new(-3.5, 0.02, -14), { Color = rgb(30, 32, 34), Material = M.DiamondPlate, CanCollide = false })
+	wallSign(m, w, 1, -4, 6.5, Vector2.new(6, 1.4), "UNIFORMS MUST BE WORN\nAT ALL TIMES")
 	B.panelGrid(m, w, L, h, 1, 3, p.light, 0.6)
 	return m
 end
@@ -883,22 +1187,61 @@ local function comms(): Model
 	return m
 end
 
--- Captain's office. The nameplate has been scratched off.
+-- Captain's office: wood paneling, an executive desk, a model of the ship, a final log entry.
 local function captain(): Model
 	local m = B.newRoom("CaptainsOffice", { Weight = 1, MinRoom = 15 })
-	local w, L, h, p = 22, 22, 11, PAL.office
-	B.shell(m, w, L, h, p, { windows = { { side = "right", z = -11, y = 3, w = 8, h = 4 } } })
-	part(m, "Desk", Vector3.new(8, 0.3, 3.5), CFrame.new(-6, 3, -12), { Color = rgb(70, 50, 38), Material = M.Wood })
-	for _, dx in { -3.6, 3.6 } do
-		part(m, "DeskLeg", Vector3.new(0.4, 2.85, 3.2), CFrame.new(-6 + dx, 1.425, -12), { Color = rgb(60, 42, 32), Material = M.Wood })
+	local w, L, h, p = 24, 24, 11, PAL.captain
+	B.shell(m, w, L, h, p, { windows = { { side = "right", z = -12, y = 3, w = 10, h = 4.5 } } })
+	local wood = { Color = rgb(75, 50, 35), Material = M.Wood }
+	local brass = { Color = rgb(170, 140, 80), Material = M.Metal }
+	local dark = { Color = rgb(28, 28, 32) }
+	part(m, "Rug", Vector3.new(10, 0.05, 9), CFrame.new(-6.5, 0.025, -13), { Color = rgb(90, 30, 35), Material = M.Fabric, CanCollide = false })
+	-- Executive desk on two drawer pedestals.
+	part(m, "Desk", Vector3.new(7, 0.3, 3.2), CFrame.new(-6.5, 3.05, -13), wood)
+	part(m, "DeskInlay", Vector3.new(4, 0.02, 1.8), CFrame.new(-6.5, 3.21, -13), { Color = rgb(40, 60, 45), Material = M.Leather, CanCollide = false })
+	for _, x in { -9, -4 } do
+		part(m, "Pedestal", Vector3.new(1.8, 2.9, 2.8), CFrame.new(x, 1.45, -13), wood)
+		for d = 0, 2 do
+			part(m, "Handle", Vector3.new(0.5, 0.08, 0.08), CFrame.new(x, 0.6 + d * 0.9, -11.56), brass)
+		end
 	end
-	local plate = part(m, "Nameplate", Vector3.new(2, 0.5, 0.3), CFrame.new(-6, 3.4, -10.6), { Color = rgb(170, 140, 80), Material = M.Metal }) :: Part
+	part(m, "Monitor", Vector3.new(1.8, 1.2, 0.15), CFrame.new(-6.5, 3.95, -12.2), dark)
+	local screen = part(m, "Screen", Vector3.new(1.6, 1, 0.05), CFrame.new(-6.5, 3.95, -12.3), { Material = M.Neon, Color = rgb(20, 30, 45), CanCollide = false }) :: Part
+	B.label(screen, "LOG 4,811", Enum.NormalId.Front, rgb(160, 200, 255), Enum.Font.Code)
+	local plate = part(m, "Nameplate", Vector3.new(2, 0.5, 0.3), CFrame.new(-6.5, 3.45, -11.55), brass) :: Part
 	B.label(plate, "CAPT. ######", Enum.NormalId.Back, rgb(40, 30, 20))
-	chair(m, CFrame.new(-6, 0, -15.2) * CFrame.Angles(0, math.pi, 0), rgb(40, 30, 26))
-	local flag = B.onWall(m, w, -1, -5, 6, Vector2.new(3, 5), 0.1, "Flag", { Color = rgb(225, 140, 50), Material = M.Fabric }) :: Part
+	part(m, "PhotoFrame", Vector3.new(0.7, 0.55, 0.08), CFrame.new(-8.8, 3.48, -13.6) * CFrame.Angles(0.2, 0.5, 0), wood)
+	part(m, "Glass", Vector3.new(0.3, 0.4, 0.3), CFrame.new(-4.3, 3.4, -13.4) * CFrame.Angles(0, 0, math.pi / 2),
+		{ Shape = Enum.PartType.Cylinder, Color = rgb(170, 110, 50), Material = M.Glass, Transparency = 0.3 })
+	chair(m, CFrame.new(-6.5, 0, -15.8) * CFrame.Angles(0, math.pi, 0), rgb(60, 30, 25))
+	for _, x in { -8.5, -4.5 } do
+		chair(m, CFrame.new(x, 0, -9.6), rgb(60, 45, 40))
+	end
+	-- Model of the S.S. Totality in a glass case.
+	part(m, "DisplayBase", Vector3.new(1.8, 3, 4.2), CFrame.new(-w / 2 + 0.9, 1.5, -4.6), wood)
+	part(m, "DisplayCase", Vector3.new(1.6, 2.2, 4), CFrame.new(-w / 2 + 0.9, 4.1, -4.6), { Color = rgb(200, 215, 220), Material = M.Glass, Transparency = 0.7, CastShadow = false })
+	part(m, "ModelHull", Vector3.new(0.35, 0.35, 3), CFrame.new(-w / 2 + 0.9, 4, -4.6), { Color = rgb(200, 202, 205), Material = M.Metal })
+	for _, dz in { -0.8, 0.6 } do
+		part(m, "ModelRing", Vector3.new(0.1, 1.2, 1.2), CFrame.new(-w / 2 + 0.9, 4, -4.6 + dz) * CFrame.Angles(0, math.pi / 2, 0),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(160, 162, 166), Material = M.Metal })
+	end
+	part(m, "Bookcase", Vector3.new(1.5, 7, 5), CFrame.new(-w / 2 + 0.75, 3.5, -20), wood)
+	local flag = B.onWall(m, w, -1, -12, 6.5, Vector2.new(3, 4.5), 0.1, "Flag", { Color = rgb(225, 140, 50), Material = M.Fabric }) :: Part
 	B.label(flag, "SOLSTICE", Enum.NormalId.Right, rgb(40, 25, 15))
-	part(m, "Bookcase", Vector3.new(1.5, 7, 4), CFrame.new(-w / 2 + 0.75, 3.5, -18), { Color = rgb(70, 50, 38), Material = M.Wood })
-	B.panelGrid(m, w, L, h, 2, 2, p.light, 0.5)
+	-- Globe and bar cart by the window, the captain's last log on the wall.
+	part(m, "GlobeStand", Vector3.new(0.3, 3, 0.3), CFrame.new(8.5, 1.5, -20), brass)
+	part(m, "Globe", Vector3.new(1.8, 1.8, 1.8), CFrame.new(8.5, 3.9, -20), { Shape = Enum.PartType.Ball, Color = rgb(50, 90, 140) })
+	part(m, "BarCart", Vector3.new(1.6, 2.8, 2.4), CFrame.new(w / 2 - 1, 1.4, -4.5), wood)
+	for k = 0, 2 do
+		part(m, "Bottle", Vector3.new(0.9, 0.35, 0.35), CFrame.new(w / 2 - 1, 3.25, -5.3 + k * 0.8) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(70 + k * 30, 50, 30), Material = M.Glass, Transparency = 0.2 })
+	end
+	local log = B.onWall(m, w, 1, -20.5, 5.5, Vector2.new(3.4, 2.2), 0.15, "LogTerminal", { Color = rgb(10, 18, 28), Material = M.Neon }) :: Part
+	B.label(log, "LOG 4,811:\nTHEY ARE IN\nTHE WALLS", Enum.NormalId.Left, rgb(150, 200, 255), Enum.Font.Code)
+	endSign(m, 0, -1, 7.5, 7.5, Vector2.new(4, 0.8), "CAPTAIN", rgb(60, 42, 30), rgb(210, 180, 120))
+	for _, z in { -6, -17 } do
+		B.bulb(m, Vector3.new(0, h - 0.8, z), rgb(255, 205, 150), 18, 0.6, 1.2)
+	end
 	return m
 end
 
@@ -1072,34 +1415,110 @@ local function helioscope(): Model
 	return m
 end
 
--- Xenobiology lab. Whatever they found, they brought it aboard.
+-- Xenobiology lab: specimen tanks with something in them. One broke out and went into the vents.
+local function specimen(m: Model, x: number, z: number, side: number)
+	local flesh = { Color = rgb(45, 35, 60), CanCollide = false }
+	part(m, "Specimen", Vector3.new(1.5, 1.5, 1.5), CFrame.new(x, 5.2, z), { Shape = Enum.PartType.Ball, Color = rgb(45, 35, 60), CanCollide = false })
+	for k = 0, 2 do
+		local yaw = k * 2.1
+		local seg = CFrame.new(x, 4.6, z) * CFrame.Angles(0, yaw, 0)
+		part(m, "Tentacle", Vector3.new(0.3, 1.3, 0.3), seg * CFrame.Angles(0.6, 0, 0) * CFrame.new(0, -0.6, 0), flesh)
+		part(m, "Tentacle", Vector3.new(0.22, 1.2, 0.22), seg * CFrame.Angles(0.6, 0, 0) * CFrame.new(0, -1.2, 0) * CFrame.Angles(-0.9, 0, 0) * CFrame.new(0, -0.55, 0), flesh)
+	end
+	part(m, "Eye", Vector3.new(0.35, 0.35, 0.35), CFrame.new(x - side * 0.65, 5.4, z), { Shape = Enum.PartType.Ball, Material = M.Neon, Color = rgb(190, 40, 40), CanCollide = false })
+end
+
 local function xenolab(): Model
 	local m = B.newRoom("XenoLab", { Weight = 1, MinRoom = 40 })
-	local w, L, h, p = 28, 36, 12, PAL.lab
+	local w, L, h, p = 30, 40, 13, PAL.xeno
 	B.shell(m, w, L, h, p)
+	local rand = Random.new(44)
+	local metal = { Color = rgb(60, 64, 70), Material = M.Metal }
+	local liquidColor = rgb(110, 190, 150)
 	local i = 0
+	local broken
 	for _, side in { -1, 1 } do
-		for _, z in { -6, -14, -22, -30 } do
+		for _, z in { -7, -16, -25 } do
 			i += 1
-			local x = side * 10.5
-			local base = part(m, "TankBase", Vector3.new(3.4, 0.8, 3.4), CFrame.new(x, 0.4, z), { Color = rgb(60, 64, 70), Material = M.Metal }) :: Part
-			part(m, "TankCap", Vector3.new(3.4, 0.6, 3.4), CFrame.new(x, 8.1, z), { Color = rgb(60, 64, 70), Material = M.Metal })
-			if i == 6 then
-				-- Broken from the inside.
-				part(m, "Spill", Vector3.new(0.05, 5, 5), CFrame.new(x - side * 3, 0.025, z) * CFrame.Angles(0, 0, math.pi / 2),
-					{ Shape = Enum.PartType.Cylinder, Color = rgb(110, 60, 150), Material = M.Glass, Transparency = 0.15, CanCollide = false })
-			else
-				part(m, "TankGlass", Vector3.new(7, 3, 3), CFrame.new(x, 4.3, z) * CFrame.Angles(0, 0, math.pi / 2),
-					{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = rgb(150, 210, 180), Transparency = 0.55, CastShadow = false })
-				part(m, "Specimen", Vector3.new(1.4, 1.4, 1.4), CFrame.new(x, 4.8, z), { Shape = Enum.PartType.Ball, Color = rgb(45, 35, 60), CanCollide = false })
-				part(m, "Specimen", Vector3.new(0.4, 2.6, 0.4), CFrame.new(x, 3.2, z) * CFrame.Angles(0.4, 0, 0.3), { Color = rgb(45, 35, 60), CanCollide = false })
+			local x = side * 11.5
+			local base = part(m, "TankBase", Vector3.new(3.6, 1, 3.6), CFrame.new(x, 0.5, z), metal) :: Part
+			part(m, "TankRing", Vector3.new(0.1, 3.3, 3.3), CFrame.new(x, 1.05, z) * CFrame.Angles(0, 0, math.pi / 2),
+				{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(60, 140, 100), CanCollide = false })
+			part(m, "TankCap", Vector3.new(3.6, 0.8, 3.6), CFrame.new(x, 8.5, z), metal)
+			for _, dx in { -0.8, 0.8 } do
+				part(m, "TankPipe", Vector3.new(0.3, h - 8.9, 0.3), CFrame.new(x + dx, 8.9 + (h - 8.9) / 2, z), metal)
 			end
-			glowing(base, rgb(130, 220, 170), 6, 0.5)
+			if side == 1 and z == -16 then
+				broken = Vector3.new(x, 0, z)
+				part(m, "Spill", Vector3.new(0.05, 5, 6), CFrame.new(x - 3, 0.025, z) * CFrame.Angles(0, 0, math.pi / 2),
+					{ Shape = Enum.PartType.Cylinder, Color = rgb(110, 60, 150), Material = M.Glass, Transparency = 0.15, CanCollide = false })
+				for _ = 1, 10 do
+					part(m, "Shard", Vector3.new(rand:NextNumber(0.3, 0.8), 0.05, rand:NextNumber(0.2, 0.6)),
+						CFrame.new(x - rand:NextNumber(1.5, 5), 0.05, z + rand:NextNumber(-2.5, 2.5)) * CFrame.Angles(rand:NextNumber(-0.3, 0.3), rand:NextNumber(0, 3), 0),
+						{ Color = rgb(190, 220, 210), Material = M.Glass, Transparency = 0.4, CanCollide = false })
+				end
+			else
+				part(m, "TankGlass", Vector3.new(7, 3, 3), CFrame.new(x, 4.6, z) * CFrame.Angles(0, 0, math.pi / 2),
+					{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = rgb(170, 220, 200), Transparency = 0.6, CastShadow = false })
+				part(m, "TankLiquid", Vector3.new(6.6, 2.7, 2.7), CFrame.new(x, 4.6, z) * CFrame.Angles(0, 0, math.pi / 2),
+					{ Shape = Enum.PartType.Cylinder, Material = M.Glass, Color = liquidColor, Transparency = 0.55, CastShadow = false, CanCollide = false })
+				specimen(m, x, z, side)
+				for _ = 1, 4 do
+					part(m, "Bubble", Vector3.new(0.2, 0.2, 0.2), CFrame.new(x + rand:NextNumber(-0.9, 0.9), rand:NextNumber(2, 7.5), z + rand:NextNumber(-0.9, 0.9)),
+						{ Shape = Enum.PartType.Ball, Color = rgb(230, 255, 240), Transparency = 0.3, CanCollide = false })
+				end
+			end
+			local glow = Instance.new("PointLight")
+			glow.Color = rgb(130, 220, 170)
+			glow.Range = 8
+			glow.Brightness = 0.6
+			glow.Parent = base
 		end
 	end
-	endSign(m, -L, 1, 0, 10.4, Vector2.new(10, 1.2), "XENOBIOLOGY - LEVEL 4 CLEARANCE")
-	wallSign(m, w, -1, -18, 9.6, Vector2.new(6, 1.6), "SPECIMEN ORIGIN:\nSOLAR CORONA ??", rgb(225, 228, 230), rgb(40, 50, 90), Enum.Font.Cartoon)
-	B.panelGrid(m, w, L, h, 1, 4, p.light, 0.5)
+	-- The vent it escaped into, grille torn off, a residue trail leading to it.
+	B.onWall(m, w, 1, -21, 1.2, Vector2.new(2, 1.6), 0.1, "VentHole", { Color = rgb(5, 5, 6) })
+	part(m, "VentGrille", Vector3.new(1.6, 0.08, 2), CFrame.new(w / 2 - 2.2, 0.04, -20.6) * CFrame.Angles(0, 0.4, 0), metal)
+	if broken then
+		for k = 1, 5 do
+			local t = k / 6
+			local pos = broken:Lerp(Vector3.new(w / 2 - 0.5, 0, -21), t) + Vector3.new(-1.5 * (1 - t), 0.03, 0)
+			part(m, "Residue", Vector3.new(0.05, 1.2 - t * 0.5, 1.6 - t * 0.6), CFrame.new(pos) * CFrame.Angles(0, k, math.pi / 2),
+				{ Shape = Enum.PartType.Cylinder, Color = rgb(110, 60, 150), Material = M.Glass, Transparency = 0.2, CanCollide = false })
+		end
+	end
+	-- Dissection table under a surgical lamp, a tray of instruments.
+	part(m, "ExamTable", Vector3.new(3, 0.3, 6), CFrame.new(-6.5, 3, -33), { Color = rgb(170, 175, 178), Material = M.Metal })
+	part(m, "ExamLeg", Vector3.new(0.8, 2.85, 0.8), CFrame.new(-6.5, 1.425, -33), metal)
+	part(m, "Tray", Vector3.new(1.2, 0.08, 1.8), CFrame.new(-4, 3.2, -30.6), { Color = rgb(190, 192, 195), Material = M.Metal })
+	part(m, "TrayStand", Vector3.new(0.15, 3.15, 0.15), CFrame.new(-4, 1.585, -30.6), metal)
+	for k = -1, 1 do
+		part(m, "Instrument", Vector3.new(0.08, 0.04, 1.2), CFrame.new(-4 + k * 0.3, 3.26, -30.6), { Color = rgb(220, 222, 225), Material = M.Metal })
+	end
+	part(m, "Chain", Vector3.new(0.12, h - 8.3, 0.12), CFrame.new(-6.5, 8.3 + (h - 8.3) / 2, -33), metal)
+	local lampDisc = part(m, "Lamp", Vector3.new(0.4, 2.4, 2.4), CFrame.new(-6.5, 8.1, -33) * CFrame.Angles(0, 0, math.pi / 2),
+		{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(150, 160, 165), CanCollide = false }) :: Part
+	local spot = Instance.new("SpotLight")
+	spot.Face = Enum.NormalId.Left
+	spot.Angle = 50
+	spot.Range = 10
+	spot.Brightness = 1
+	spot.Color = rgb(230, 240, 245)
+	spot.Parent = lampDisc
+	-- Specimen jars either side of the exit.
+	for _, sx in { -1, 1 } do
+		local x = sx * 9
+		part(m, "JarShelf", Vector3.new(5, 0.2, 1.2), CFrame.new(x, 4, -L + 0.6), metal)
+		part(m, "JarShelf", Vector3.new(5, 0.2, 1.2), CFrame.new(x, 6.5, -L + 0.6), metal)
+		for _, y in { 4.1, 6.6 } do
+			for k = -2, 2 do
+				part(m, "Jar", Vector3.new(0.9, 0.6, 0.6), CFrame.new(x + k * 0.95, y + 0.45, -L + 0.6) * CFrame.Angles(0, 0, math.pi / 2),
+					{ Shape = Enum.PartType.Cylinder, Color = liquidColor:Lerp(rgb(150, 120, 90), rand:NextNumber()), Material = M.Glass, Transparency = 0.35 })
+			end
+		end
+	end
+	endSign(m, -L, 1, 0, 11, Vector2.new(10, 1.2), "XENOBIOLOGY - LEVEL 4 CLEARANCE")
+	wallSign(m, w, -1, -16, 10, Vector2.new(6, 1.6), "SPECIMEN ORIGIN:\nSOLAR CORONA ??", rgb(225, 228, 230), rgb(40, 50, 90), Enum.Font.Cartoon)
+	B.panelGrid(m, w, L, h, 1, 4, p.light, 0.45)
 	return m
 end
 
@@ -1356,21 +1775,42 @@ local function lounge(): Model
 	return m
 end
 
--- Ship cinema. The film ended a long time ago.
-local function cinema(): Model
-	local m = B.newRoom("Cinema", { Weight = 1, MinRoom = 16 })
-	local w, L, h, p = 30, 36, 14, PAL.quarters
+-- Simulation bay: reclined VR couches for crew recreation. The last session never ended.
+local function simulationBay(): Model
+	local m = B.newRoom("SimulationBay", { Weight = 1, MinRoom = 16 })
+	local w, L, h, p = 30, 34, 12, PAL.hull
 	B.shell(m, w, L, h, p)
-	local screen = B.onWall(m, w, -1, -18, 7, Vector2.new(18, 8), 0.2, "Screen", { Color = rgb(40, 42, 46), Material = M.Neon }) :: Part
-	B.label(screen, "PLEASE REMAIN SEATED", Enum.NormalId.Right, rgb(150, 150, 150), Enum.Font.Garamond)
-	for _, x in { -9, -6, 5, 8, 11 } do
-		for z = -8, -28, -2.5 do
-			chair(m, CFrame.new(x, 0, z) * CFrame.Angles(0, math.rad(90), 0), rgb(90, 30, 35))
+	local frameP = { Color = rgb(50, 54, 62), Material = M.Metal }
+	local cushion = { Color = rgb(40, 60, 90), Material = M.Leather }
+	-- Projection grid on the floor.
+	for x = -12, 12, 4 do
+		part(m, "GridLine", Vector3.new(0.12, 0.03, L - 2), CFrame.new(x, 0.015, -L / 2), { Material = M.Neon, Color = rgb(25, 60, 70), CanCollide = false })
+	end
+	for z = -3, -31, -4 do
+		part(m, "GridLine", Vector3.new(w - 2, 0.04, 0.12), CFrame.new(0, 0.02, z), { Material = M.Neon, Color = rgb(25, 60, 70), CanCollide = false })
+	end
+	-- Couches in four columns, heads toward the far wall.
+	local i = 0
+	for _, x in { -11, -6.5, 6.5, 11 } do
+		for _, z in { -8, -15, -22, -29 } do
+			i += 1
+			part(m, "CouchBase", Vector3.new(2.2, 1.2, 4.2), CFrame.new(x, 0.6, z + 0.4), frameP)
+			part(m, "CouchSeat", Vector3.new(2, 0.4, 3.8), CFrame.new(x, 1.4, z + 0.6), cushion)
+			part(m, "CouchBack", Vector3.new(2, 0.4, 2.6), CFrame.new(x, 2.3, z - 2.1) * CFrame.Angles(0.6, 0, 0), cushion)
+			if i ~= 7 then
+				part(m, "Headset", Vector3.new(1.1, 0.7, 0.9), CFrame.new(x, 3.25, z - 2.75) * CFrame.Angles(0.6, 0, 0), { Color = rgb(25, 25, 28) })
+				part(m, "Visor", Vector3.new(0.9, 0.3, 0.05), CFrame.new(x, 3.4, z - 2.25) * CFrame.Angles(0.6, 0, 0), { Material = M.Neon, Color = rgb(40, 110, 130), CanCollide = false })
+				part(m, "Cable", Vector3.new(0.1, h - 3.6, 0.1), CFrame.new(x, 3.6 + (h - 3.6) / 2, z - 3), { Color = rgb(20, 20, 22) })
+			else
+				-- Headset dangling from its cable over an empty couch.
+				part(m, "Cable", Vector3.new(0.1, h - 5, 0.1), CFrame.new(x, 5 + (h - 5) / 2, z - 1), { Color = rgb(20, 20, 22) })
+				part(m, "Headset", Vector3.new(1.1, 0.7, 0.9), CFrame.new(x, 4.6, z - 1) * CFrame.Angles(0.3, 0.8, 0.2), { Color = rgb(25, 25, 28) })
+			end
 		end
 	end
-	for _, z in { -6, -18, -30 } do
-		B.bulb(m, Vector3.new(w / 2 - 0.6, 7, z), p.light, 12, 0.5, 0.8)
-	end
+	local screen = B.onWall(m, w, -1, -17, 8.5, Vector2.new(16, 4), 0.2, "Screen", { Color = rgb(15, 30, 40), Material = M.Neon }) :: Part
+	B.label(screen, "SIMULATION: EARTH - BEACH 04\nSESSION ENDED 4,811 DAYS AGO\nPLEASE REMAIN RECLINED", Enum.NormalId.Right, rgb(150, 220, 235), Enum.Font.Code)
+	B.panelGrid(m, w, L, h, 2, 3, p.light, 0.4)
 	return m
 end
 
@@ -1400,39 +1840,96 @@ local function gallery(): Model
 	return m
 end
 
--- Arboretum: a dead tree under a skylight.
-local function deadTree(m: Model, x: number, z: number, scale: number)
+-- Arboretum: a huge dead tree with its roots over the planter, a stone path, a dry pond, the sunlamp off.
+local function deadTree(m: Model, x: number, z: number, scale: number, rand: Random)
 	local bark = { Color = rgb(70, 55, 42), Material = M.Wood }
-	local trunkH = 14 * scale
-	part(m, "Trunk", Vector3.new(3 * scale, trunkH, 3 * scale), CFrame.new(x, 0.1 + trunkH / 2, z), bark)
-	for k = 0, 3 do
-		part(m, "Branch", Vector3.new(0.8 * scale, 7 * scale, 0.8 * scale),
-			CFrame.new(x, trunkH - 1, z) * CFrame.Angles(0, k * math.pi / 2 + 0.4, 0) * CFrame.Angles(0.7, 0, 0) * CFrame.new(0, 3.5 * scale, 0), bark)
+	-- Trunk in three tapering sections.
+	local y = 0.1
+	for k, size in { 3.2, 2.5, 1.8 } do
+		local sh = 5 * scale
+		part(m, "Trunk", Vector3.new(size * scale, sh, size * scale), CFrame.new(x, y + sh / 2, z) * CFrame.Angles(0, k * 0.3, 0), bark)
+		y += sh
+	end
+	-- Main branches at two heights, each with a smaller branch off it.
+	for k = 0, 5 do
+		local height = if k < 3 then y - 1.5 * scale else y - 4 * scale
+		local yaw = k * 1.05 + rand:NextNumber(-0.3, 0.3)
+		local base = CFrame.new(x, height, z) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(rand:NextNumber(0.6, 0.9), 0, 0)
+		local len = rand:NextNumber(5, 7.5) * scale
+		part(m, "Branch", Vector3.new(0.8 * scale, len, 0.8 * scale), base * CFrame.new(0, len / 2, 0), bark)
+		local tip = base * CFrame.new(0, len * 0.7, 0)
+		local sub = rand:NextNumber(2.5, 4) * scale
+		part(m, "Twig", Vector3.new(0.4 * scale, sub, 0.4 * scale), tip * CFrame.Angles(0, 0, rand:NextNumber(-0.8, 0.8)) * CFrame.new(0, sub / 2, 0), bark)
+	end
+	-- Roots spreading over the soil.
+	for k = 0, 4 do
+		local yaw = k * 1.26 + rand:NextNumber(-0.2, 0.2)
+		local len = rand:NextNumber(3, 4.5) * scale
+		part(m, "Root", Vector3.new(0.7 * scale, 0.5 * scale, len),
+			CFrame.new(x, 0.3, z) * CFrame.Angles(0, yaw, 0) * CFrame.new(0, 0, -len / 2 - 0.8 * scale) * CFrame.Angles(0.08, 0, 0), bark)
+	end
+	-- Dead leaves around it.
+	for _ = 1, 18 do
+		local r, a = rand:NextNumber(2, 7) * scale, rand:NextNumber(0, math.pi * 2)
+		part(m, "DeadLeaf", Vector3.new(0.5, 0.03, 0.35), CFrame.new(x + math.cos(a) * r, 0.12, z + math.sin(a) * r) * CFrame.Angles(0, a, 0),
+			{ Color = rgb(110, 80, 45), Material = M.Grass, CanCollide = false, CastShadow = false })
 	end
 end
 
 local function arboretum(): Model
 	local m = B.newRoom("Arboretum", { Weight = 1, MinRoom = 24 })
-	local w, L, h, p = 40, 44, 24, PAL.hydro
+	local w, L, h, p = 40, 48, 24, PAL.hydro
 	B.shell(m, w, L, h, p)
-	local rim = { Color = rgb(90, 95, 92), Material = M.Concrete }
-	part(m, "PlanterRim", Vector3.new(10, 1, 0.6), CFrame.new(-9, 0.5, -16.3), rim)
-	part(m, "PlanterRim", Vector3.new(10, 1, 0.6), CFrame.new(-9, 0.5, -25.7), rim)
-	part(m, "PlanterRim", Vector3.new(0.6, 1, 8.8), CFrame.new(-13.7, 0.5, -21), rim)
-	part(m, "PlanterRim", Vector3.new(0.6, 1, 8.8), CFrame.new(-4.3, 0.5, -21), rim)
-	part(m, "Soil", Vector3.new(8.8, 0.1, 8.8), CFrame.new(-9, 0.05, -21), { Color = rgb(60, 45, 32), Material = M.Ground })
-	deadTree(m, -9, -21, 1)
-	part(m, "Grass", Vector3.new(8, 0.05, 10), CFrame.new(11, 0.025, -34), { Color = rgb(80, 85, 50), Material = M.Grass, CanCollide = false })
-	deadTree(m, 11, -34, 0.6)
-	for _, z in { -10, -30 } do
-		part(m, "Bench", Vector3.new(2, 1.5, 6), CFrame.new(8, 0.75, z), { Color = rgb(100, 75, 55), Material = M.Wood })
+	local rand = Random.new(77)
+	local stone = { Color = rgb(95, 98, 96), Material = M.Concrete }
+	-- Raised planter around the big tree.
+	for _, dz in { -6.3, 6.3 } do
+		part(m, "PlanterRim", Vector3.new(13.2, 1.2, 0.6), CFrame.new(-10.5, 0.6, -19 + dz), stone)
 	end
-	wallSign(m, w, -1, -34, 4, Vector2.new(8, 1.2), "PLEASE DO NOT TOUCH THE TREE")
-	for _, x in { -10, 10 } do
-		for _, z in { -11, -33 } do
-			B.panel(m, x, h, z, rgb(220, 230, 255), 0.9, 30, Vector3.new(10, 0.3, 10))
+	for _, dx in { -6.3, 6.3 } do
+		part(m, "PlanterRim", Vector3.new(0.6, 1.2, 12), CFrame.new(-10.5 + dx, 0.6, -19), stone)
+	end
+	part(m, "Soil", Vector3.new(12, 0.1, 12), CFrame.new(-10.5, 0.05, -19), { Color = rgb(55, 42, 30), Material = M.Ground })
+	deadTree(m, -10.5, -19, 1, rand)
+	-- Grass bed with a smaller tree.
+	part(m, "Grass", Vector3.new(10, 0.06, 12), CFrame.new(12, 0.03, -36), { Color = rgb(85, 85, 52), Material = M.Grass, CanCollide = false })
+	deadTree(m, 12, -36, 0.6, rand)
+	-- Stone stepping path down the middle.
+	for z = -2, -46, -2.6 do
+		part(m, "PathStone", Vector3.new(2.2, 0.06, 1.6), CFrame.new(rand:NextNumber(-0.4, 0.4), 0.03, z) * CFrame.Angles(0, rand:NextNumber(-0.2, 0.2), 0),
+			{ Color = rgb(110, 112, 108), Material = M.Slate, CanCollide = false })
+	end
+	-- Dry pond ringed with stones.
+	part(m, "PondBed", Vector3.new(0.05, 6, 6), CFrame.new(-11, 0.025, -38) * CFrame.Angles(0, 0, math.pi / 2),
+		{ Shape = Enum.PartType.Cylinder, Color = rgb(70, 65, 58), Material = M.Ground, CanCollide = false })
+	for k = 0, 9 do
+		local a = k / 10 * math.pi * 2
+		part(m, "PondStone", Vector3.new(1.4, 0.8, 1.1), CFrame.new(-11 + math.cos(a) * 3.6, 0.4, -38 + math.sin(a) * 3.6) * CFrame.Angles(0, a, 0), stone)
+	end
+	-- Benches facing the path, old lamp posts.
+	for _, z in { -12, -24 } do
+		part(m, "BenchSeat", Vector3.new(1.8, 0.3, 5), CFrame.new(6.5, 1.6, z), { Color = rgb(100, 75, 55), Material = M.Wood })
+		part(m, "BenchBack", Vector3.new(0.3, 1.6, 5), CFrame.new(7.25, 2.55, z), { Color = rgb(100, 75, 55), Material = M.Wood })
+		for _, dz in { -2, 2 } do
+			part(m, "BenchLeg", Vector3.new(1.4, 1.45, 0.3), CFrame.new(6.5, 0.725, z + dz), { Color = rgb(40, 40, 42), Material = M.Metal })
 		end
 	end
+	for _, pos in { Vector3.new(-4.5, 0, -6), Vector3.new(4.5, 0, -18), Vector3.new(-4.5, 0, -30), Vector3.new(4.5, 0, -42) } do
+		part(m, "LampPost", Vector3.new(0.3, 7, 0.3), CFrame.new(pos.X, 3.5, pos.Z), { Color = rgb(40, 40, 42), Material = M.Metal })
+		B.bulb(m, Vector3.new(pos.X, 7.5, pos.Z), rgb(255, 210, 150), 20, 0.7, 1)
+	end
+	-- Dim emergency lighting while the sunlamp is down.
+	for _, x in { -16, 16 } do
+		B.panel(m, x, h, -24, rgb(200, 210, 220), 0.4, 26)
+	end
+	-- The artificial sun overhead, switched off.
+	for _, x in { -12, 0, 12 } do
+		for _, z in { -12, -36 } do
+			part(m, "Sunlamp", Vector3.new(10, 0.3, 10), CFrame.new(x, h - 0.15, z), { Color = rgb(70, 68, 60), Material = M.Glass })
+		end
+	end
+	wallSign(m, w, -1, -24, 14, Vector2.new(8, 1.4), "SUNLAMP OFFLINE", rgb(40, 12, 10), rgb(255, 120, 90), Enum.Font.Code)
+	wallSign(m, w, 1, -36, 4, Vector2.new(7, 1.2), "PLEASE DO NOT TOUCH THE TREE")
 	return m
 end
 
@@ -1456,32 +1953,58 @@ local function decon(): Model
 	return m
 end
 
--- Mail room: letters home that were never sent.
-local function mailRoom(): Model
-	local m = B.newRoom("MailRoom", { Weight = 1, MinRoom = 7 })
-	local w, L, h, p = 20, 24, 10, PAL.office
+-- Sample vault: freezers of sealed solar plasma samples. One freezer has been emptied.
+local function sampleVault(): Model
+	local m = B.newRoom("SampleVault", { Weight = 1, MinRoom = 7 })
+	local w, L, h, p = 26, 32, 12, PAL.cryo
 	B.shell(m, w, L, h, p)
-	part(m, "Cubbies", Vector3.new(1.5, 7, 16), CFrame.new(-w / 2 + 0.75, 3.5, -12), { Color = rgb(110, 90, 70), Material = M.Wood })
-	local rand = Random.new(12)
-	for row = 0, 4 do
-		for col = 0, 5 do
-			local y, z = 1.2 + row * 1.3, -12 - 6.5 + col * 2.6
-			part(m, "Cubby", Vector3.new(0.05, 1, 2.2), CFrame.new(-w / 2 + 1.525, y, z), { Color = rgb(40, 32, 26), CanCollide = false })
-			if rand:NextNumber() < 0.5 then
-				part(m, "Letter", Vector3.new(0.3, 0.6, 1.2), CFrame.new(-w / 2 + 1.7, y - 0.1, z + rand:NextNumber(-0.4, 0.4)),
-					{ Color = rgb(225, 220, 205), CanCollide = false })
+	local metal = { Color = rgb(170, 175, 182), Material = M.Metal }
+	local frameP = { Color = rgb(60, 66, 76), Material = M.Metal }
+	local i = 0
+	for _, side in { -1, 1 } do
+		for _, z in { -5, -10, -15, -20, -25 } do
+			i += 1
+			local face = side * (w / 2)
+			part(m, "FreezerBody", Vector3.new(1.8, 8.6, 4.4), CFrame.new(face - side * 0.9, 4.3, z), metal)
+			for _, y in { 1, 3, 5, 7 } do
+				part(m, "FreezerShelf", Vector3.new(0.6, 0.1, 4.2), CFrame.new(face - side * 2.1, y, z), frameP)
+				if i ~= 3 then
+					for k = -2, 2 do
+						part(m, "Canister", Vector3.new(0.9, 0.45, 0.45), CFrame.new(face - side * 2.1, y + 0.5, z + k * 0.8) * CFrame.Angles(0, 0, math.pi / 2),
+							{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(150, 80, 30) })
+					end
+				end
 			end
+			-- Frame and frosted door.
+			for _, dz in { -2.15, 2.15 } do
+				part(m, "FreezerFrame", Vector3.new(0.8, 8.6, 0.1), CFrame.new(face - side * 2.2, 4.3, z + dz), frameP)
+			end
+			if i == 3 then
+				part(m, "Frost", Vector3.new(3, 0.05, 3), CFrame.new(face - side * 4, 0.025, z), { Color = rgb(200, 225, 240), Material = M.Ice, CanCollide = false })
+			else
+				part(m, "FreezerDoor", Vector3.new(0.06, 8.4, 4.2), CFrame.new(face - side * 2.55, 4.3, z),
+					{ Color = rgb(200, 220, 235), Material = M.Glass, Transparency = 0.5, CastShadow = false })
+			end
+			local label = part(m, "FreezerLabel", Vector3.new(0.05, 0.4, 1.6), CFrame.new(face - side * 0.025, 9.2, z), { Color = rgb(30, 32, 36) }) :: Part
+			B.label(label, `SOL-{if side == -1 then "A" else "B"}{i}`, if side == -1 then Enum.NormalId.Right else Enum.NormalId.Left, rgb(220, 225, 230), Enum.Font.Code)
 		end
 	end
-	part(m, "SortingTable", Vector3.new(3, 0.3, 8), CFrame.new(6, 3, -12), { Color = rgb(150, 152, 155), Material = M.Metal })
-	for _, dz in { -3.5, 3.5 } do
-		part(m, "TableLeg", Vector3.new(2.6, 2.85, 0.3), CFrame.new(6, 1.425, -12 + dz), { Color = rgb(80, 82, 86), Material = M.Metal })
+	-- Scanning station with a canister on a cradle.
+	part(m, "Station", Vector3.new(3, 3, 6), CFrame.new(6.8, 1.5, -15), metal)
+	part(m, "Cradle", Vector3.new(1, 0.5, 1.6), CFrame.new(6.8, 3.25, -15), frameP)
+	local sample = part(m, "Canister", Vector3.new(1.2, 0.6, 0.6), CFrame.new(6.8, 3.6, -15) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(0, 0, 0),
+		{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(255, 130, 40) }) :: Part
+	glowing(sample, rgb(255, 140, 60), 8, 0.6)
+	for _, dz in { -1.6, 1.6 } do
+		part(m, "ScannerPost", Vector3.new(0.3, 3, 0.3), CFrame.new(6.8, 4.5, -15 + dz), frameP)
 	end
-	for _, b in { { 7, -20 }, { 4, -21 } } do
-		part(m, "MailBag", Vector3.new(2, 2, 1.5), CFrame.new(b[1], 1, b[2]), { Color = rgb(90, 80, 60), Material = M.Fabric })
-	end
-	wallSign(m, w, 1, -12, 6.5, Vector2.new(6, 1.4), "UNDELIVERED\nRETURN TO SENDER")
-	B.panelGrid(m, w, L, h, 1, 2, p.light, 0.6)
+	part(m, "ScannerTop", Vector3.new(0.4, 0.3, 3.5), CFrame.new(6.8, 6.15, -15), frameP)
+	part(m, "ScanLine", Vector3.new(0.05, 0.05, 3.2), CFrame.new(6.8, 5.95, -15), { Material = M.Neon, Color = rgb(255, 50, 40), CanCollide = false })
+	-- Cart of empty canister crates.
+	part(m, "Cart", Vector3.new(2.4, 1.6, 4), CFrame.new(-6.5, 1.2, -18), frameP)
+	part(m, "Crate", Vector3.new(2, 1, 1.6), CFrame.new(-6.5, 2.5, -17.2), { Color = rgb(150, 155, 160), Material = M.Metal })
+	endSign(m, -L, 1, -7, 6, Vector2.new(4.5, 3), "VAULT TEMP\n-196 C\n-112 C\n-12 C  WARNING", rgb(20, 24, 30), rgb(255, 130, 100))
+	B.panelGrid(m, w, L, h, 1, 4, p.light, 0.5)
 	return m
 end
 
@@ -1561,8 +2084,8 @@ function RoomPresets.BuildNormal(): { Model }
 		airlock(), coolant(), suitStorage(), hydroponics(), gym(), memorial(), library(), dormitory(),
 		laundry(), galley(), comms(), captain(), conference(), workshop(), cargo(), elevators(),
 		infirmary(), helioscope(), xenolab(), quarantine(),
-		bridge(), capacitors(), tunnel(), security(), brig(), recycling(), lounge(), cinema(),
-		gallery(), arboretum(), decon(), mailRoom(),
+		bridge(), capacitors(), tunnel(), security(), brig(), recycling(), lounge(), simulationBay(),
+		gallery(), arboretum(), decon(), sampleVault(),
 	})
 end
 
