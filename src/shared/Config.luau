@@ -3,6 +3,10 @@ local Config = {}
 
 Config.TOTAL_ROOMS = 100
 
+-- Set to a number to replay the same run every time (e.g. 194006090).
+-- Leave as nil for a new random run each time.
+Config.SEED = nil
+
 -- Where room 1 is built. High up so it doesn't clash with the baseplate.
 Config.START_CFRAME = CFrame.new(0, 200, 0)
 

@@ -279,6 +279,19 @@ function RoomGenerator.OnDoorOpened(n: number)
 	end
 end
 
+-- Prints this run's room order to the Output window, 10 rooms per line.
+function RoomGenerator.PrintPlan()
+	local lines = { `[Totality] Room order for seed {ReplicatedStorage:GetAttribute("Seed")}:` }
+	for start = 1, #plan, 10 do
+		local names = {}
+		for i = start, math.min(start + 9, #plan) do
+			table.insert(names, `{i} {plan[i].template.Name}`)
+		end
+		table.insert(lines, table.concat(names, ", "))
+	end
+	print(table.concat(lines, "\n"))
+end
+
 function RoomGenerator.Start(seed: number?)
 	seed = seed or math.random(1, 2 ^ 31 - 1)
 	rng = Random.new(seed)
@@ -291,6 +304,7 @@ function RoomGenerator.Start(seed: number?)
 	roomsFolder.Parent = workspace
 
 	buildPlan()
+	RoomGenerator.PrintPlan()
 	for i = 1, 1 + Config.ROOMS_AHEAD do
 		spawnRoom(i)
 	end
