@@ -2,7 +2,8 @@
 	Global lighting for the S.S. Totality: low ambient light inside, so the
 	ship's own (dim) lamps do the work. Your Sky (and Clouds) in Lighting are
 	left alone. The place's Atmosphere and post effects (Bloom, SunRays, ...)
-	are removed, because they wash the interiors out white.
+	are removed, because they wash the interiors out white; the client adds
+	its own dark haze instead (see client/Ambience.luau).
 ]]
 local Lighting = game:GetService("Lighting")
 
