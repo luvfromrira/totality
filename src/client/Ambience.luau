@@ -126,6 +126,7 @@ end
 local function startSound()
 	local id = Config.AMBIENT_SOUND_ID
 	if not id then
+		print("[Totality] No ambient sound set (Config.AMBIENT_SOUND_ID is nil)")
 		return
 	end
 	local sound = Instance.new("Sound")
@@ -134,7 +135,15 @@ local function startSound()
 	sound.Looped = true
 	sound.Volume = 0.4
 	sound.Parent = SoundService
+	print(`[Totality] Loading ambient sound {id}...`)
 	sound:Play()
+	task.delay(8, function()
+		if sound.IsLoaded then
+			print(`[Totality] Ambient sound playing ({math.floor(sound.TimeLength)}s loop)`)
+		else
+			warn(`[Totality] Ambient sound {id} didn't load. It may not be allowed in this game; try another sound.`)
+		end
+	end)
 end
 
 function Ambience.Start()
