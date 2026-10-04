@@ -21,6 +21,7 @@ local RoomBuilder = {}
 
 RoomBuilder.DOOR_WIDTH = 6
 RoomBuilder.DOOR_HEIGHT = 9
+local DOOR_CLEAR = RoomBuilder.DOOR_WIDTH / 2 + 1
 
 export type Palette = {
 	wall: Color3,
@@ -255,6 +256,126 @@ function RoomBuilder.shell(model: Model, w: number, L: number, h: number, pal: P
 
 	RoomBuilder.marker(model, "Entrance", CFrame.new(0, 0, 1))
 	model.PrimaryPart = model:FindFirstChild("Entrance") :: BasePart
+	-- Remembered for the ship-detail pass that runs after the room is furnished.
+	model:SetAttribute("W", w)
+	model:SetAttribute("L", L)
+	model:SetAttribute("H", h)
+	model:SetAttribute("TrimColor", pal.trim)
+	model:SetAttribute("HasEntrance", o.entrance ~= false)
+end
+
+--[[
+	Ship-detail pass, run after a room is fully furnished. Adds spaceship
+	structure everywhere it fits:
+	  - frame rings: a ceiling beam with a rib down each side wall
+	  - conduit pipes along the upper wall edges
+	  - wall vents near the floor
+	  - small guide lights along the floor edges
+	  - hazard strips in front of each doorway
+	Every piece is checked against what's already in the room and skipped if
+	it would intersect anything (furniture, windows, doors, lamps, signs...).
+]]
+local function aabb(p: BasePart): (Vector3, Vector3)
+	local h = p.Size / 2
+	local c = p.CFrame
+	local r, u, l = c.RightVector, c.UpVector, c.LookVector
+	local e = Vector3.new(
+		math.abs(r.X) * h.X + math.abs(u.X) * h.Y + math.abs(l.X) * h.Z,
+		math.abs(r.Y) * h.X + math.abs(u.Y) * h.Y + math.abs(l.Y) * h.Z,
+		math.abs(r.Z) * h.X + math.abs(u.Z) * h.Y + math.abs(l.Z) * h.Z
+	)
+	return c.Position - e, c.Position + e
+end
+
+local STRUCTURE = { Floor = true, Ceiling = true, Wall = true }
+
+function RoomBuilder.shipDetails(model: Model)
+	local w, L, h = model:GetAttribute("W"), model:GetAttribute("L"), model:GetAttribute("H")
+	if not w then
+		return
+	end
+	local trim: Color3 = model:GetAttribute("TrimColor")
+
+	-- Hazard strips just inside each doorway.
+	local hazard = { Color = Color3.fromRGB(200, 160, 40), Material = Enum.Material.SmoothPlastic, CanCollide = false }
+	local exit = model:FindFirstChild("Exit") :: BasePart?
+	if exit then
+		part(model, "Hazard", Vector3.new(RoomBuilder.DOOR_WIDTH, 0.05, 1), exit.CFrame * CFrame.new(0, 0.025, 1.65), hazard)
+	end
+	if model:GetAttribute("HasEntrance") then
+		part(model, "Hazard", Vector3.new(RoomBuilder.DOOR_WIDTH, 0.05, 1), CFrame.new(0, 0.025, -0.5), hazard)
+	end
+
+	local obstacles = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and not STRUCTURE[d.Name] and d.Transparency < 1 then
+			local mn, mx = aabb(d)
+			-- Keep clear of doorways and windows, not just touching them.
+			if d.Name == "Door" or d.Name == "Window" or d.Name == "ExitLight" then
+				mn -= Vector3.one * 1.5
+				mx += Vector3.one * 1.5
+			end
+			table.insert(obstacles, { mn, mx })
+		end
+	end
+	-- The entrance doorway has no parts in it, so block it off explicitly.
+	table.insert(obstacles, { Vector3.new(-DOOR_CLEAR, 0, -1.5), Vector3.new(DOOR_CLEAR, RoomBuilder.DOOR_HEIGHT + 1, 1) })
+
+	local function free(size: Vector3, cf: CFrame): boolean
+		local h2 = size / 2 - Vector3.one * 0.01
+		local mn, mx = cf.Position - h2, cf.Position + h2
+		for _, o in obstacles do
+			if mn.X < o[2].X and mx.X > o[1].X and mn.Y < o[2].Y and mx.Y > o[1].Y and mn.Z < o[2].Z and mx.Z > o[1].Z then
+				return false
+			end
+		end
+		return true
+	end
+	local function add(name: string, size: Vector3, cf: CFrame, props: { [string]: any }, axisAligned: boolean?): boolean
+		if not free(size, cf) then
+			return false
+		end
+		local p = part(model, name, size, cf, props)
+		if p and axisAligned ~= false then
+			local mn, mx = aabb(p)
+			table.insert(obstacles, { mn, mx })
+		end
+		return true
+	end
+
+	local metal = { Color = trim, Material = Enum.Material.Metal }
+	local dark = { Color = Color3.fromRGB(35, 37, 42), Material = Enum.Material.Metal }
+
+	-- Frame rings: try every 2 studs, keep them at least 8 apart.
+	local lastZ: number? = nil
+	for z = -3, -L + 3, -2 do
+		if lastZ == nil or lastZ - z >= 8 then
+			if add("Beam", Vector3.new(w, 0.6, 0.8), CFrame.new(0, h - 0.3, z), metal) then
+				lastZ = z
+				for _, sx in { -1, 1 } do
+					add("Rib", Vector3.new(0.4, h - 0.6, 0.8), CFrame.new(sx * (w / 2 - 0.2), (h - 0.6) / 2, z), metal)
+				end
+			end
+		end
+	end
+
+	-- Conduit along the upper edges of the side walls (only where it fits the whole way).
+	for _, sx in { -1, 1 } do
+		add("Conduit", Vector3.new(0.5, 0.5, L), CFrame.new(sx * (w / 2 - 0.25), h - 1.6, -L / 2), dark)
+	end
+
+	-- Vents and guide lights along both side walls.
+	local i = 0
+	for z = -2, -L + 2, -3 do
+		i += 1
+		for _, sx in { -1, 1 } do
+			add("GuideLight", Vector3.new(0.3, 0.12, 0.5), CFrame.new(sx * (w / 2 - 0.15), 0.06, z),
+				{ Color = Color3.fromRGB(40, 110, 140), Material = Enum.Material.Neon, CanCollide = false, CastShadow = false })
+			if i % 4 == 2 then
+				add("Vent", Vector3.new(0.1, 1, 2), CFrame.new(sx * (w / 2 - 0.05), 1.4, z), dark)
+			end
+		end
+	end
 end
 
 -- Baseboard trim along both side walls (don't use in rooms with a side exit).

@@ -28,9 +28,10 @@ Config.NO_REPEAT_WITHIN = 4
 -- Chance (0-1) that any given lamp flickers, before damage is added.
 Config.FLICKER_CHANCE = 0.05
 
--- Ship damage: rooms before DECAY_START are untouched, and the damage
--- ramps up until DECAY_FULL, where it's at its worst.
-Config.DECAY_START = 10
-Config.DECAY_FULL = 90
+-- Ship damage: starts at DECAY_START and is at its worst by DECAY_FULL.
+-- DECAY_CURVE above 1 makes it build up slowly at first (higher = slower).
+Config.DECAY_START = 3
+Config.DECAY_FULL = 100
+Config.DECAY_CURVE = 1.6
 
 return Config

@@ -108,7 +108,7 @@ local function corridor(): Model
 		wallSign(m, w, -1, z, 9.2, Vector2.new(2.4, 0.6), "SEALED", rgb(120, 30, 30), rgb(240, 220, 220))
 	end
 	pipe(m, -(w / 2 - 0.5), h - 0.6, L)
-	part(m, "Grate", Vector3.new(2, 0.05, L), CFrame.new(0, 0.025, -L / 2), { Color = rgb(45, 46, 50), Material = M.DiamondPlate, CanCollide = false })
+	part(m, "Grate", Vector3.new(2, 0.04, L), CFrame.new(0, 0.02, -L / 2), { Color = rgb(45, 46, 50), Material = M.DiamondPlate, CanCollide = false })
 	B.panelGrid(m, w, L, h, 1, 6, p.light, 0.7)
 	return m
 end
@@ -456,7 +456,7 @@ end
 
 -- Cryo bay: rows of stasis pods. Some are still occupied. One is open.
 local function cryo(): Model
-	local m = B.newRoom("CryoBay", { Weight = 1, MinRoom = 35 })
+	local m = B.newRoom("CryoBay", { Weight = 2, MinRoom = 12 })
 	local w, L, h, p = 28, 44, 12, PAL.cryo
 	B.shell(m, w, L, h, p)
 	local i = 0
@@ -553,7 +553,8 @@ end
 
 -- Room 100: the heart of the ship.
 local function final(): Model
-	local m = B.newRoom("Final")
+	-- Pristine: untouched by the attack, which makes it worse.
+	local m = B.newRoom("Final", { Pristine = true })
 	local w, L, h, p = 48, 60, 30, PAL.cosmic
 	B.shell(m, w, L, h, p, { exit = "none" })
 	local rift = part(m, "Rift", Vector3.new(14, 20, 0.6), CFrame.new(0, 12, -L + 3),
@@ -572,16 +573,23 @@ local function final(): Model
 	return m
 end
 
+local function detailed(rooms)
+	for _, m in rooms do
+		B.shipDetails(m)
+	end
+	return rooms
+end
+
 function RoomPresets.BuildNormal(): { Model }
-	return {
+	return detailed({
 		corridor(), bend(1), bend(-1), stairwell(), office(), messHall(), quarters(), medBay(),
 		laboratory(), hygiene(), overflow(), pool(), hangar(), solarControl(), archive(), promenade(),
 		cryo(), observatory(),
-	}
+	})
 end
 
 function RoomPresets.BuildSpecial(): { [string]: Model }
-	return { Start = start(), Midpoint = midpoint(), Final = final() }
+	return detailed({ Start = start(), Midpoint = midpoint(), Final = final() })
 end
 
 return RoomPresets
