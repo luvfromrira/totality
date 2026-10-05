@@ -10,17 +10,23 @@ local function flickerLoop(lamp: BasePart)
 	end
 	local material = lamp.Material
 	local rand = Random.new()
+	-- Sparks from torn wires crackle constantly; lamps stutter every few seconds.
+	local spark = lamp:GetAttribute("Spark")
 	while lamp.Parent do
-		task.wait(rand:NextNumber(2, 7))
+		task.wait(if spark then rand:NextNumber(0.05, 0.8) else rand:NextNumber(2, 7))
 		for _ = 1, rand:NextInteger(2, 6) do
 			if not lamp.Parent then
 				return
 			end
 			light.Enabled = false
 			lamp.Material = Enum.Material.SmoothPlastic
+			if spark then
+				lamp.Transparency = 1
+			end
 			task.wait(rand:NextNumber(0.03, 0.12))
 			light.Enabled = true
 			lamp.Material = material
+			lamp.Transparency = 0
 			task.wait(rand:NextNumber(0.03, 0.2))
 		end
 	end
