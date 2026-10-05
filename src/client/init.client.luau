@@ -7,11 +7,13 @@ local Flicker = require(script.Flicker)
 local Ambience = require(script.Ambience)
 local Footsteps = require(script.Footsteps)
 local Sprint = require(script.Sprint)
+local PromptOutline = require(script.PromptOutline)
 
 task.spawn(Flicker.Start)
 task.spawn(Ambience.Start)
 task.spawn(Footsteps.Start)
 task.spawn(Sprint.Start)
+task.spawn(PromptOutline.Start)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"

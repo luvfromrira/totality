@@ -81,6 +81,15 @@ local function cloneCustom(template: Model, cframe: CFrame): Model
 			d.CanQuery = false
 		end
 	end
+	-- Lay it flat: turn its thinnest side to face up, whatever way it was saved.
+	local _, raw = model:GetBoundingBox()
+	local flat = CFrame.identity
+	if raw.X < raw.Y and raw.X <= raw.Z then
+		flat = CFrame.Angles(0, 0, math.rad(90))
+	elseif raw.Z < raw.Y and raw.Z < raw.X then
+		flat = CFrame.Angles(math.rad(90), 0, 0)
+	end
+	cframe *= flat
 	model:PivotTo(cframe)
 	-- Lift it so the bottom of its bounding box sits on the surface.
 	local box, size = model:GetBoundingBox()
@@ -112,6 +121,8 @@ local function createItem(cframe: CFrame, rng: Random): Model
 	prompt.ObjectText = "Research"
 	prompt.HoldDuration = 0 -- instant grab
 	prompt.RequiresLineOfSight = false
+	prompt.MaxActivationDistance = 8
+	prompt.Style = Enum.ProximityPromptStyle.Custom -- no popup; the client outlines the folder instead
 	prompt.Parent = back
 	prompt.Triggered:Connect(function()
 		if not model.Parent then
