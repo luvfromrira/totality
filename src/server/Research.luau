@@ -8,6 +8,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 
@@ -38,7 +39,7 @@ local function piece(model: Model, name: string, size: Vector3, cframe: CFrame, 
 end
 
 -- A manila research folder with papers poking out, lying on the surface at `cframe`.
-local function createItem(cframe: CFrame, rng: Random): Model
+local function buildFolder(cframe: CFrame, rng: Random): Model
 	local model = Instance.new("Model")
 	model.Name = "Research"
 
@@ -65,6 +66,39 @@ local function createItem(cframe: CFrame, rng: Random): Model
 	piece(model, "Stamp", Vector3.new(0.4, 0.004, 0.4), front.CFrame * CFrame.new(0.35, 0.017, -0.5), Color3.fromRGB(220, 120, 40))
 	piece(model, "Strip", Vector3.new(1.6, 0.004, 0.16), front.CFrame * CFrame.new(0, 0.017, 0.75), Color3.fromRGB(150, 30, 30))
 	model.PrimaryPart = back
+	return model
+end
+
+-- Copy of ServerStorage.ResearchModel (e.g. a Toolbox model) resting on the surface at `cframe`.
+local function cloneCustom(template: Model, cframe: CFrame): Model
+	local model = template:Clone()
+	for _, d in model:GetDescendants() do
+		if d:IsA("BaseScript") or d:IsA("ModuleScript") then
+			d:Destroy() -- Toolbox scripts can be malicious; never run them.
+		elseif d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanQuery = false
+		end
+	end
+	model:PivotTo(cframe)
+	-- Lift it so the bottom of its bounding box sits on the surface.
+	local box, size = model:GetBoundingBox()
+	local lift = cframe.Position.Y - (box.Position.Y - size.Y / 2)
+	model:PivotTo(cframe + Vector3.new(0, lift, 0))
+	if not model.PrimaryPart then
+		model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart", true)
+	end
+	return model
+end
+
+local function createItem(cframe: CFrame, rng: Random): Model
+	local template = ServerStorage:FindFirstChild("ResearchModel")
+	local model = if template and template:IsA("Model") and template:FindFirstChildWhichIsA("BasePart", true)
+		then cloneCustom(template, cframe)
+		else buildFolder(cframe, rng)
+	model.Name = "Research"
+	local back = model.PrimaryPart :: BasePart
 
 	-- Faint glow so it can still be spotted in dark rooms.
 	local glow = Instance.new("PointLight")
