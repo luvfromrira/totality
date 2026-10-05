@@ -102,7 +102,7 @@ end
 
 ---------------------------------------------------------------- corridors
 
--- Main ship corridor: ribbed walls, sealed hatches, a few windows.
+-- Main ship corridor: ribbed walls, handrails, sealed hatches with wheels, an O2 box, windows, a cable tray overhead.
 local function corridor(): Model
 	local m = B.newRoom("Corridor", { Weight = 3 })
 	local w, L, h, p = 12, 48, 10, PAL.hull
@@ -112,54 +112,132 @@ local function corridor(): Model
 			{ side = "right", z = -32, y = 3.5, w = 6, h = 3 },
 		},
 	})
+	local steel = { Color = rgb(150, 154, 160), Material = M.Metal }
+	local dark = { Color = rgb(55, 58, 64), Material = M.Metal }
 	for _, z in { -8, -24, -40 } do
 		for _, sx in { -1, 1 } do
 			part(m, "Rib", Vector3.new(0.4, h, 1), CFrame.new(sx * (w / 2 - 0.2), h / 2, z), { Color = p.trim, Material = M.Metal })
 		end
 	end
+	-- Handrails on brackets, broken around the hatches on the left.
+	local function rail(sx: number, z0: number, z1: number)
+		local len = z0 - z1
+		part(m, "Handrail", Vector3.new(len, 0.2, 0.2), CFrame.new(sx * (w / 2 - 0.65), 3.2, (z0 + z1) / 2) * CFrame.Angles(0, math.pi / 2, 0),
+			{ Shape = Enum.PartType.Cylinder, Color = steel.Color, Material = steel.Material })
+		for z = z0 - 1, z1 + 1, -4 do
+			part(m, "RailBracket", Vector3.new(0.45, 0.12, 0.12), CFrame.new(sx * (w / 2 - 0.42), 3.2, z), steel)
+		end
+	end
+	rail(1, -1, -47)
+	rail(-1, -1, -13.6)
+	rail(-1, -18.4, -29.6)
+	rail(-1, -34.4, -47)
+	-- Sealed hatches with locking wheels and red status lights.
 	for _, z in { -16, -32 } do
 		B.onWall(m, w, -1, z, 4.25, Vector2.new(4, 8.5), 0.3, "Hatch", { Color = rgb(80, 84, 92), Material = M.DiamondPlate })
+		for _, dz in { -2.15, 2.15 } do
+			part(m, "HatchFrame", Vector3.new(0.45, 8.8, 0.3), CFrame.new(-w / 2 + 0.225, 4.4, z + dz), { Color = rgb(200, 160, 40), Material = M.Metal })
+		end
+		part(m, "HatchWheel", Vector3.new(0.15, 1.6, 1.6), CFrame.new(-w / 2 + 0.38, 4.2, z), { Shape = Enum.PartType.Cylinder, Color = rgb(170, 40, 35), Material = M.Metal })
+		part(m, "StatusLight", Vector3.new(0.1, 0.25, 0.25), CFrame.new(-w / 2 + 0.05, 7.6, z + 2.8), { Material = M.Neon, Color = rgb(220, 40, 30), CanCollide = false })
 		wallSign(m, w, -1, z, 9.2, Vector2.new(2.4, 0.6), "SEALED", rgb(120, 30, 30), rgb(240, 220, 220))
 	end
-	pipe(m, -(w / 2 - 0.5), h - 0.6, L)
+	-- Emergency O2 box between a window and a rib.
+	local box = B.onWall(m, w, 1, -20.5, 4.6, Vector2.new(1.2, 1.6), 0.4, "O2Box", { Color = rgb(170, 40, 35), Material = M.Metal }) :: Part
+	B.label(box, "EMERGENCY O2", Enum.NormalId.Left, rgb(240, 230, 220))
+	-- Overhead cable tray with a few sagging cables, conduit along the left.
+	part(m, "CableTray", Vector3.new(1.4, 0.15, L - 2), CFrame.new(0, h - 1.2, -L / 2), dark)
+	for _, z in { -12, -29, -43 } do
+		part(m, "TrayHanger", Vector3.new(0.1, 1.05, 0.1), CFrame.new(0, h - 0.6, z), dark)
+		part(m, "LooseCable", Vector3.new(0.1, 1.4, 0.1), CFrame.new(0.4, h - 2, z + 2) * CFrame.Angles(0.3, 0, 0.2), { Color = rgb(30, 30, 32), CanCollide = false })
+	end
+	part(m, "Pipe", Vector3.new(L, 0.8, 0.8), CFrame.new(-(w / 2 - 0.5), h - 0.6, -L / 2) * CFrame.Angles(0, math.pi / 2, 0), { Shape = Enum.PartType.Cylinder, Color = rgb(90, 94, 100), Material = M.Metal })
+	-- Floor: centre grating and vents near the walls.
 	part(m, "Grate", Vector3.new(2, 0.04, L), CFrame.new(0, 0.02, -L / 2), { Color = rgb(45, 46, 50), Material = M.DiamondPlate, CanCollide = false })
+	for _, z in { -4, -20, -36 } do
+		part(m, "FloorVent", Vector3.new(1.4, 0.05, 2), CFrame.new(-3.6, 0.025, z), { Color = rgb(25, 26, 30), Material = M.DiamondPlate, CanCollide = false })
+	end
+	wallSign(m, w, -1, -44, 6.5, Vector2.new(4, 1.2), "DECK 2 - SECTION C")
 	B.panelGrid(m, w, L, h, 1, 6, p.light, 0.7)
 	return m
 end
 
--- Corridor corner: turns left (1) or right (-1).
+-- Corridor corner: chamfered corner, pipes turning the bend, painted arrows on the floor, a junction box.
 local function bend(direction: number): Model
 	local m = B.newRoom(if direction == 1 then "BendLeft" else "BendRight", { Weight = 2, Turn = direction, Group = "Bend" })
 	local w, L, h, p = 14, 14, 10, PAL.hull
 	B.shell(m, w, L, h, p, { exit = if direction == 1 then "left" else "right" })
-	endSign(m, -L, 1, 0, 6, Vector2.new(5, 1.2), if direction == 1 then "<  CONTINUE" else "CONTINUE  >")
-	part(m, "Pipe", Vector3.new(w, 0.8, 0.8), CFrame.new(0, h - 0.6, -L + 0.5), { Shape = Enum.PartType.Cylinder, Color = rgb(90, 94, 100), Material = M.Metal })
-	part(m, "Hazard", Vector3.new(w, 0.05, 1), CFrame.new(0, 0.025, -L + 0.5), { Color = p.trim, CanCollide = false })
+	local dark = { Color = rgb(55, 58, 64), Material = M.Metal }
+	local pipeColor = rgb(90, 94, 100)
+	local solid = direction -- the wall opposite the exit: +x for a left turn, -x for a right turn
+	-- Chamfer the far corner on the solid side.
+	part(m, "Chamfer", Vector3.new(4.2, h, 4.2), CFrame.new(solid * (w / 2), h / 2, -L) * CFrame.Angles(0, math.pi / 4, 0), { Color = p.wall, Material = p.wallMat })
+	-- Pipe along the front wall that elbows round toward the exit.
+	part(m, "Pipe", Vector3.new(w - 4, 0.8, 0.8), CFrame.new(-solid * 2, h - 0.6, -L + 0.5), { Shape = Enum.PartType.Cylinder, Color = pipeColor, Material = M.Metal })
+	part(m, "PipeElbow", Vector3.new(1, 1, 1), CFrame.new(-solid * (w / 2 - 0.5), h - 0.6, -L + 0.5), { Shape = Enum.PartType.Ball, Color = pipeColor, Material = M.Metal })
+	part(m, "Pipe", Vector3.new(3.4, 0.8, 0.8), CFrame.new(-solid * (w / 2 - 0.5), h - 0.6, -L + 2.2) * CFrame.Angles(0, math.pi / 2, 0), { Shape = Enum.PartType.Cylinder, Color = pipeColor, Material = M.Metal })
+	-- Direction sign and painted chevrons pointing to the exit.
+	endSign(m, -L, 1, -solid * 1.5, 6, Vector2.new(5, 1.2), if direction == 1 then "<  SECTION D" else "SECTION D  >")
+	for k = 0, 2 do
+		local x = -solid * (1 + k * 1.6)
+		for _, a in { 0.6, -0.6 } do
+			part(m, "Chevron", Vector3.new(1.2, 0.05, 0.3), CFrame.new(x, 0.025, -L / 2) * CFrame.Angles(0, a * -solid, 0) * CFrame.new(0, 0, a * -0.35),
+				{ Color = rgb(200, 160, 40), CanCollide = false })
+		end
+	end
+	-- Junction box and conduit on the solid side wall.
+	B.onWall(m, w, solid, -5, 5, Vector2.new(1.6, 2), 0.5, "JunctionBox", dark)
+	part(m, "Conduit", Vector3.new(0.3, h - 6, 0.3), CFrame.new(solid * (w / 2 - 0.25), 6 + (h - 6) / 2, -5), dark)
+	part(m, "Hazard", Vector3.new(w, 0.05, 1), CFrame.new(0, 0.025, -L + 0.5), { Color = rgb(200, 160, 40), CanCollide = false })
 	B.panel(m, 0, h, -L / 2, p.light, 0.8, 18)
 	return m
 end
 
--- Concrete-and-steel stairwell climbing to a door one deck up.
+-- Deck stairwell: yellow step nosings, wall lights following the stairs, a big painted deck number, a fire extinguisher.
 local function stairwell(): Model
 	local m = B.newRoom("DeckStairwell", { Weight = 1, MinRoom = 3 })
 	local w, L, rise, p = 14, 40, 10, PAL.hull
 	local h = rise + 12
 	B.shell(m, w, L, h, p, { exitY = rise })
+	local steel = { Color = rgb(150, 152, 158), Material = M.Metal }
 	local steps, run = 20, 22 / 20
 	for i = 1, steps do
 		local y = i * (rise / steps)
-		part(m, "Step", Vector3.new(w, y, run), CFrame.new(0, y / 2, -8 - (i - 0.5) * run), { Color = p.floor, Material = p.floorMat })
+		local front = -8 - (i - 1) * run
+		part(m, "Step", Vector3.new(w, y, run), CFrame.new(0, y / 2, front - run / 2), { Color = p.floor, Material = p.floorMat })
+		part(m, "Nosing", Vector3.new(w - 1, 0.06, 0.25), CFrame.new(0, y + 0.03, front - 0.125), { Color = rgb(200, 160, 40), CanCollide = false })
 	end
 	part(m, "Landing", Vector3.new(w, rise, 10), CFrame.new(0, rise / 2, -35), { Color = p.floor, Material = p.floorMat })
+	-- Wall handrails on posts following the slope.
 	local length = math.sqrt(22 ^ 2 + rise ^ 2)
+	local slope = math.atan2(rise, 22)
 	for _, sx in { -1, 1 } do
-		part(m, "Rail", Vector3.new(0.3, 0.3, length),
-			CFrame.new(sx * (w / 2 - 0.25), 3 + rise / 2, -19) * CFrame.Angles(math.atan2(rise, 22), 0, 0),
+		part(m, "Rail", Vector3.new(0.25, 0.25, length), CFrame.new(sx * (w / 2 - 0.5), 3 + rise / 2, -19) * CFrame.Angles(slope, 0, 0),
 			{ Color = rgb(200, 160, 40), Material = M.Metal, CanCollide = false })
+		for k = 0, 4 do
+			local t = k / 4
+			part(m, "RailPost", Vector3.new(0.12, 0.6, 0.12), CFrame.new(sx * (w / 2 - 0.5), 2.7 + rise * t, -8 - 22 * t), steel)
+			-- Small amber wall lights stepping up with the stairs.
+			local lamp = part(m, "Lamp", Vector3.new(0.15, 0.3, 0.6), CFrame.new(sx * (w / 2 - 0.075), 1 + rise * t, -9 - 20 * t), { Material = M.Neon, Color = rgb(170, 110, 40), CanCollide = false }) :: Part
+			if k % 2 == 0 then
+				local glow = Instance.new("PointLight")
+				glow.Color = rgb(255, 170, 80)
+				glow.Range = 8
+				glow.Brightness = 0.5
+				glow.Parent = lamp
+			end
+		end
 	end
-	wallSign(m, w, -1, -35, rise + 5, Vector2.new(3, 1.5), "DECK ??", rgb(200, 200, 195), rgb(20, 20, 20))
+	-- Pipes angled up along the ceiling.
+	part(m, "Pipe", Vector3.new(L, 0.7, 0.7), CFrame.new(w / 2 - 1, h - 0.6, -L / 2) * CFrame.Angles(0, math.pi / 2, 0), { Shape = Enum.PartType.Cylinder, Color = rgb(90, 94, 100), Material = M.Metal })
+	-- Deck markings and safety gear.
+	local deck = B.onWall(m, w, -1, -35, rise + 5, Vector2.new(5, 3), 0.1, "DeckMark", { Color = rgb(200, 160, 40) }) :: Part
+	B.label(deck, "DECK ??", Enum.NormalId.Right, rgb(25, 25, 25), Enum.Font.GothamBlack)
+	wallSign(m, w, 1, -19, 9, Vector2.new(3, 1), "UP ^", rgb(200, 160, 40), rgb(25, 25, 25))
+	part(m, "Extinguisher", Vector3.new(1.4, 0.6, 0.6), CFrame.new(w / 2 - 0.4, rise + 1.2, -38) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(190, 30, 30), Material = M.Metal })
+	B.onWall(m, w, 1, -38, rise + 3.2, Vector2.new(1, 0.6), 0.1, "ExtSign", { Color = rgb(190, 30, 30) })
 	for _, z in { -4, -14, -24, -35 } do
-		B.panel(m, 0, h, z, p.light, 0.9, 26)
+		B.panel(m, 0, h, z, rgb(240, 245, 255), 0.7, 28)
 	end
 	return m
 end
@@ -295,28 +373,64 @@ local function messHall(): Model
 	return m
 end
 
--- Crew quarters corridor. Every cabin is 237.
+-- Crew quarters: wood-panelled hallway of cabin doors (all 237), keycard readers, art, one door ajar, an abandoned cart.
 local function quarters(): Model
 	local m = B.newRoom("CrewQuarters", { Weight = 2, MinRoom = 4 })
 	local w, L, h, p = 10, 64, 10, PAL.quarters
 	B.shell(m, w, L, h, p)
 	B.baseboards(m, w, L, p.trim)
-	for i = 0, 4 do
-		local z = -6 - i * 12
-		for _, side in { -1, 1 } do
-			B.onWall(m, w, side, z, 4.25, Vector2.new(4, 8.5), 0.3, "CabinDoor", { Color = rgb(85, 60, 48), Material = M.Wood })
-			local plate = B.onWall(m, w, side, z, 6.8, Vector2.new(1.2, 0.5), 0.4, "Plate",
-				{ Color = rgb(170, 145, 80), Material = M.Metal }) :: Part
-			B.label(plate, "237", if side == -1 then Enum.NormalId.Right else Enum.NormalId.Left, rgb(40, 30, 20), Enum.Font.Garamond)
+	local wood = { Color = rgb(85, 60, 48), Material = M.Wood }
+	local brass = { Color = rgb(170, 145, 80), Material = M.Metal }
+	for _, side in { -1, 1 } do
+		-- Wainscoting with a chair rail.
+		B.onWall(m, w, side, -L / 2, 1.5, Vector2.new(L, 3), 0.15, "Wainscot", { Color = rgb(70, 48, 36), Material = M.Wood })
+		B.onWall(m, w, side, -L / 2, 3.05, Vector2.new(L, 0.15), 0.25, "ChairRail", wood)
+		local inward = if side == -1 then Enum.NormalId.Right else Enum.NormalId.Left
+		for i = 0, 4 do
+			local z = -6 - i * 12
+			local ajar = side == 1 and i == 2
+			-- Frame, door (or a dark gap with the door swung open), handle, number plate, keycard reader.
+			for _, dz in { -2.2, 2.2 } do
+				B.onWall(m, w, side, z + dz, 4.4, Vector2.new(0.4, 8.8), 0.4, "DoorFrame", wood)
+			end
+			B.onWall(m, w, side, z, 8.65, Vector2.new(4.8, 0.3), 0.4, "DoorFrame", wood)
+			if ajar then
+				B.onWall(m, w, side, z, 4.25, Vector2.new(4, 8.5), 0.32, "DarkGap", { Color = rgb(5, 5, 6) })
+				part(m, "CabinDoor", Vector3.new(0.3, 8.5, 4), CFrame.new(side * (w / 2 - 0.3), 4.25, z - 2) * CFrame.Angles(0, -side * 0.45, 0) * CFrame.new(0, 0, 2), wood)
+			else
+				B.onWall(m, w, side, z, 4.25, Vector2.new(4, 8.5), 0.3, "CabinDoor", { Color = rgb(90, 55, 40), Material = M.Wood })
+				part(m, "Handle", Vector3.new(0.35, 0.15, 0.15), CFrame.new(side * (w / 2 - 0.45), 4, z + 1.4), brass)
+			end
+			local plate = B.onWall(m, w, side, z, 7, Vector2.new(1.2, 0.5), 0.42, "Plate", { Color = rgb(170, 145, 80), Material = M.Metal }) :: Part
+			B.label(plate, "237", inward, rgb(40, 30, 20), Enum.Font.Garamond)
+			B.onWall(m, w, side, z + 3, 4.2, Vector2.new(0.4, 0.7), 0.12, "CardReader", { Color = rgb(30, 30, 34) })
+			part(m, "ReaderLight", Vector3.new(0.05, 0.12, 0.12), CFrame.new(side * (w / 2 - 0.145), 4.4, z + 3),
+				{ Material = M.Neon, Color = if ajar then rgb(60, 220, 90) else rgb(220, 50, 40), CanCollide = false })
+			if side == -1 and i == 3 then
+				part(m, "DoNotDisturb", Vector3.new(0.04, 0.9, 0.4), CFrame.new(side * (w / 2 - 0.5), 3.6, z + 1.4), { Color = rgb(200, 60, 50), CanCollide = false })
+			end
+		end
+		-- Framed art between the doors, under each sconce.
+		for z = -12, -48, -12 do
+			B.onWall(m, w, side, z, 4.8, Vector2.new(1.8, 1.4), 0.1, "ArtFrame", brass)
+			B.onWall(m, w, side, z, 4.8, Vector2.new(1.5, 1.1), 0.12, "Art", { Color = rgb(60 + (z % 7) * 10, 70, 90), Material = M.Fabric })
+			B.bulb(m, Vector3.new(side * (w / 2 - 0.6), 6.6, z), p.light, 12, 0.6, 0.8)
 		end
 	end
-	for z = -12, -48, -12 do
-		for _, side in { -1, 1 } do
-			B.bulb(m, Vector3.new(side * (w / 2 - 0.6), 6.5, z), p.light, 12, 0.6, 0.8)
-		end
+	-- Carpet runner with gold border, room-service cart, a laundry bag.
+	part(m, "Runner", Vector3.new(5, 0.04, L - 2), CFrame.new(0, 0.02, -L / 2), { Color = rgb(90, 25, 30), Material = M.Carpet, CanCollide = false })
+	for _, sx in { -1, 1 } do
+		part(m, "RunnerBorder", Vector3.new(0.25, 0.045, L - 2), CFrame.new(sx * 2.4, 0.0225, -L / 2), { Color = rgb(170, 140, 70), Material = M.Fabric, CanCollide = false })
 	end
+	part(m, "ServiceCart", Vector3.new(1.6, 0.15, 3), CFrame.new(-3, 2.6, -36), { Color = rgb(200, 202, 205), Material = M.Metal })
+	part(m, "ServiceCartShelf", Vector3.new(1.6, 0.15, 3), CFrame.new(-3, 0.9, -36), { Color = rgb(200, 202, 205), Material = M.Metal })
+	for _, o in { Vector3.new(-0.7, 0, -1.4), Vector3.new(0.7, 0, -1.4), Vector3.new(-0.7, 0, 1.4), Vector3.new(0.7, 0, 1.4) } do
+		part(m, "CartPost", Vector3.new(0.1, 2.5, 0.1), CFrame.new(-3 + o.X, 1.45, -36 + o.Z), brass)
+	end
+	part(m, "Cloche", Vector3.new(1, 1, 1), CFrame.new(-3, 2.9, -36.6), { Shape = Enum.PartType.Ball, Color = rgb(190, 192, 195), Material = M.Metal })
+	part(m, "LaundryBag", Vector3.new(1.2, 1.4, 1), CFrame.new(3.6, 0.7, -42.5), { Color = rgb(200, 195, 180), Material = M.Fabric })
 	for z = -8, -56, -16 do
-		B.bulb(m, Vector3.new(0, h - 0.6, z), p.light, 16, 0.7, 1)
+		B.bulb(m, Vector3.new(0, h - 0.6, z), p.light, 16, 0.6, 1)
 	end
 	return m
 end
@@ -1366,26 +1480,68 @@ local function library(): Model
 	return m
 end
 
--- Dormitory: rows of bunks, beds still unmade.
+-- Dormitory: bunks with ladders, rails, pillows and privacy curtains; a card table; lockers by the exit.
 local function dormitory(): Model
 	local m = B.newRoom("Dormitory", { Weight = 2, MinRoom = 4 })
 	local w, L, h, p = 24, 36, 11, PAL.hull
 	B.shell(m, w, L, h, p)
+	local rand = Random.new(33)
+	local frame = { Color = rgb(70, 74, 82), Material = M.Metal }
+	local blankets = { rgb(70, 80, 100), rgb(90, 95, 85), rgb(110, 60, 50), rgb(60, 70, 60) }
+	local k = 0
 	for _, side in { -1, 1 } do
 		for _, z in { -5, -13, -21, -29 } do
+			k += 1
 			local x = side * (w / 2 - 1.5)
-			for _, y in { 1.5, 5 } do
-				part(m, "Bunk", Vector3.new(3, 0.6, 7), CFrame.new(x, y, z), { Color = rgb(80, 84, 92), Material = M.Metal })
-				part(m, "Mattress", Vector3.new(2.8, 0.3, 6.8), CFrame.new(x, y + 0.45, z), { Color = rgb(150, 150, 145), Material = M.Fabric })
+			for level, y in { 1.5, 5 } do
+				part(m, "Bunk", Vector3.new(3, 0.4, 7), CFrame.new(x, y, z), frame)
+				part(m, "Mattress", Vector3.new(2.8, 0.35, 6.8), CFrame.new(x, y + 0.375, z), { Color = rgb(150, 150, 145), Material = M.Fabric })
+				part(m, "Pillow", Vector3.new(1.8, 0.35, 1.1), CFrame.new(x, y + 0.72, z - 2.7), { Color = rgb(210, 210, 205), Material = M.Fabric })
+				local occupied = side == -1 and z == -21 and level == 1
+				part(m, "Blanket", Vector3.new(2.7, if occupied then 0.7 else 0.12, 4.2), CFrame.new(x, y + (if occupied then 0.9 else 0.61), z + 1) * CFrame.Angles(0, rand:NextNumber(-0.1, 0.1), 0),
+					{ Color = blankets[rand:NextInteger(1, #blankets)], Material = M.Fabric })
+				-- Reading light on the wall at the head of each bunk.
+				part(m, "ReadingLight", Vector3.new(0.12, 0.3, 0.5), CFrame.new(side * (w / 2 - 0.06), y + 1.6, z - 2.6), { Material = M.Neon, Color = if rand:NextNumber() < 0.3 then rgb(255, 210, 150) else rgb(60, 55, 50), CanCollide = false })
 			end
 			for _, dx in { -1.35, 1.35 } do
 				for _, dz in { -3.35, 3.35 } do
-					part(m, "Post", Vector3.new(0.3, 6.5, 0.3), CFrame.new(x + dx, 3.25, z + dz), { Color = rgb(60, 62, 68), Material = M.Metal })
+					part(m, "Post", Vector3.new(0.3, 7, 0.3), CFrame.new(x + dx, 3.5, z + dz), frame)
 				end
+			end
+			-- Top bunk safety rail and a ladder on the aisle side.
+			part(m, "SafetyRail", Vector3.new(0.12, 0.12, 4.6), CFrame.new(x - side * 1.35, 6.2, z - 1), frame)
+			for _, dz in { 2.1, 2.9 } do
+				part(m, "LadderRail", Vector3.new(0.12, 5.4, 0.12), CFrame.new(x - side * 1.6, 2.7, z + dz), frame)
+			end
+			for r = 1, 4 do
+				part(m, "LadderRung", Vector3.new(0.1, 0.1, 0.9), CFrame.new(x - side * 1.6, r * 1.15, z + 2.5), frame)
+			end
+			-- Half-drawn privacy curtain on the lower bunk.
+			if k % 2 == 0 then
+				part(m, "Curtain", Vector3.new(0.05, 3, 3.2), CFrame.new(x - side * 1.5, 3.1, z - 1.8), { Color = rgb(90, 100, 120), Material = M.Fabric, CanCollide = false })
 			end
 		end
 	end
-	wallSign(m, w, -1, -17, 8.8, Vector2.new(4, 1), "LIGHTS OUT 22:00")
+	-- Card table with chairs and a scattered hand of cards.
+	part(m, "CardTable", Vector3.new(3, 0.2, 4), CFrame.new(5, 2.9, -17), { Color = rgb(70, 74, 82), Material = M.Metal })
+	part(m, "TableLeg", Vector3.new(0.4, 2.8, 0.4), CFrame.new(5, 1.4, -17), frame)
+	for _, dz in { -2.8, 2.8 } do
+		chair(m, CFrame.new(5, 0, -17 + dz) * CFrame.Angles(0, if dz > 0 then 0 else math.pi, 0), rgb(60, 65, 80))
+	end
+	for _ = 1, 7 do
+		part(m, "Card", Vector3.new(0.5, 0.02, 0.7), CFrame.new(5 + rand:NextNumber(-1, 1), 3.01 + rand:NextNumber(0, 0.02), -17 + rand:NextNumber(-1.5, 1.5)) * CFrame.Angles(0, rand:NextNumber(0, 3), 0),
+			{ Color = rgb(235, 232, 225), CanCollide = false })
+	end
+	-- Personal lockers either side of the exit.
+	for _, sx in { -1, 1 } do
+		for j = 0, 3 do
+			local x = sx * (5 + j * 1.6)
+			part(m, "Locker", Vector3.new(1.5, 7, 1.5), CFrame.new(x, 3.5, -L + 0.75), { Color = if j % 2 == 0 then rgb(70, 80, 95) else rgb(65, 74, 88), Material = M.Metal })
+			part(m, "LockerVent", Vector3.new(1, 0.6, 0.05), CFrame.new(x, 6, -L + 1.525), { Color = rgb(30, 32, 36) })
+		end
+	end
+	part(m, "LaundryPile", Vector3.new(2, 0.8, 1.6), CFrame.new(-6, 0.4, -33), { Color = rgb(90, 95, 110), Material = M.Fabric })
+	wallSign(m, w, -1, -17, 9, Vector2.new(4, 1), "LIGHTS OUT 22:00")
 	B.panelGrid(m, w, L, h, 1, 4, p.light, 0.5)
 	return m
 end
@@ -2549,64 +2705,115 @@ local function simulationBay(): Model
 	return m
 end
 
--- Gallery of the Sun: gilded frames, picture lights, brass plaques, velvet ropes. It changes.
+-- Solar exhibit hall: a giant orrery hangs over the floor, display cases of the mission's artifacts, a company timeline.
+-- Earth's arm on the orrery is snapped off. Earth is on the floor.
 local function gallery(): Model
 	local m = B.newRoom("SolarGallery", { Weight = 1, MinRoom = 28 })
-	local w, L, h, p = 16, 48, 12, PAL.promenade
+	local w, L, h, p = 30, 42, 16, PAL.promenade
 	B.shell(m, w, L, h, p)
-	local gold = { Color = rgb(170, 135, 70), Material = M.Metal }
-	local photos = {
-		{ "SOL - DAY 1", rgb(255, 220, 120) }, { "SOL - DAY 90", rgb(255, 200, 90) },
-		{ "SOL - DAY 400", rgb(255, 160, 60) }, { "SOL - DAY 1,200", rgb(240, 110, 50) },
-		{ "SOL - DAY 2,000", rgb(200, 60, 50) }, { "SOL - DAY 3,100", rgb(150, 40, 80) },
-		{ "SOL - DAY 4,000", rgb(100, 40, 130) }, { "SOL - DAY ????", rgb(60, 30, 110) },
-		{ "SOL - DAY ????", rgb(25, 15, 40) }, { "SOL - TODAY", nil },
+	local rand = Random.new(28)
+	local brass = { Color = rgb(175, 145, 85), Material = M.Metal }
+	local dark = { Color = rgb(40, 38, 36), Material = M.Metal }
+	local cz = -21
+	-- Inlaid sun motif on the floor under the orrery.
+	part(m, "FloorSun", Vector3.new(0.04, 6, 6), CFrame.new(0, 0.02, cz) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(150, 110, 50), Material = M.Marble, CanCollide = false })
+	for k = 0, 11 do
+		part(m, "FloorRay", Vector3.new(0.3, 0.035, 3), CFrame.new(0, 0.0175, cz) * CFrame.Angles(0, k * math.pi / 6, 0) * CFrame.new(0, 0, 4.6), { Color = rgb(150, 110, 50), Material = M.Marble, CanCollide = false })
+	end
+	-- Orrery: the Sun on a hub rod, planets on radial arms.
+	local y = 12
+	part(m, "HubRod", Vector3.new(0.4, h - y, 0.4), CFrame.new(0, y + (h - y) / 2, cz), brass)
+	local sun = part(m, "OrrerySun", Vector3.new(3, 3, 3), CFrame.new(0, y, cz), { Shape = Enum.PartType.Ball, Material = M.Neon, Color = rgb(255, 140, 50), CanCollide = false }) :: Part
+	glowing(sun, rgb(255, 150, 70), 24, 1)
+	local planets = {
+		{ 3, 0.5, rgb(150, 140, 130) }, { 4.6, 0.8, rgb(220, 190, 130) }, { 6.3, 0.85, nil },
+		{ 8, 0.6, rgb(190, 90, 60) }, { 10, 1.6, rgb(200, 170, 130) }, { 11.6, 1.3, rgb(220, 200, 150) },
 	}
-	part(m, "Runner", Vector3.new(4, 0.04, L - 2), CFrame.new(0, 0.02, -L / 2), { Color = rgb(70, 25, 30), Material = M.Carpet, CanCollide = false })
-	for i, ph in photos do
+	for i, pl in planets do
+		local angle = i * 1.1 + rand:NextNumber(-0.2, 0.2)
+		local dir = CFrame.new(0, y, cz) * CFrame.Angles(0, angle, 0)
+		if pl[3] == nil then
+			-- Earth's arm, snapped short.
+			part(m, "OrreryArm", Vector3.new(0.12, 0.12, 2.6), dir * CFrame.new(0, 0, -2.8), brass)
+		else
+			part(m, "OrreryArm", Vector3.new(0.12, 0.12, pl[1] - 1.5), dir * CFrame.new(0, 0, -(pl[1] + 1.5) / 2), brass)
+			part(m, "Planet", Vector3.new(pl[2], pl[2], pl[2]), dir * CFrame.new(0, 0, -pl[1]), { Shape = Enum.PartType.Ball, Color = pl[3], CanCollide = false })
+		end
+	end
+	part(m, "FallenEarth", Vector3.new(0.85, 0.85, 0.85), CFrame.new(3.2, 0.425, cz + 4.5), { Shape = Enum.PartType.Ball, Color = rgb(50, 90, 150) })
+	-- Display cases along both sides.
+	local exhibits = {
+		{ "FIRST PROBE - SOL I", "probe" }, { "CORONAL SAMPLE A1", "sample" },
+		{ "FOUNDER  E. SOLSTICE", "bust" }, { "FIRST LIGHT  2093", "photo" },
+		{ "HELIOS CORE FRAGMENT", "rock" }, { "SOL I - FINAL TRANSMISSION", "tape" },
+		{ "S.S. TOTALITY  1:400", "ship" }, { "UNCATALOGUED", "empty" },
+	}
+	for i, ex in exhibits do
 		local side = if i % 2 == 1 then -1 else 1
-		local z = -5 - math.floor((i - 1) / 2) * 9.5
-		local face = side * (w / 2)
-		-- Backing, gilded frame strips, the Sun (or nothing).
-		B.onWall(m, w, side, z, 5.5, Vector2.new(4, 4), 0.15, "Canvas", { Color = rgb(12, 12, 16) })
-		for _, dz in { -2.1, 2.1 } do
-			part(m, "Frame", Vector3.new(0.35, 4.6, 0.3), CFrame.new(face - side * 0.175, 5.5, z + dz), gold)
+		local z = -6 - math.floor((i - 1) / 2) * 9.5
+		local x = side * 10
+		part(m, "Pedestal", Vector3.new(2.4, 3, 2.4), CFrame.new(x, 1.5, z), { Color = rgb(40, 38, 36), Material = M.Marble })
+		part(m, "CaseGlass", Vector3.new(2.2, 2.2, 2.2), CFrame.new(x, 4.1, z), { Color = rgb(200, 215, 225), Material = M.Glass, Transparency = 0.75, CastShadow = false })
+		part(m, "CaseLid", Vector3.new(2.3, 0.1, 2.3), CFrame.new(x, 5.25, z), brass)
+		local kind = ex[2]
+		local c = Vector3.new(x, 3.6, z)
+		if kind == "probe" then
+			part(m, "ProbeBody", Vector3.new(0.6, 0.6, 0.6), CFrame.new(c), { Color = rgb(190, 170, 120), Material = M.Foil })
+			part(m, "ProbePanel", Vector3.new(1.8, 0.05, 0.5), CFrame.new(c), { Color = rgb(40, 60, 120), Material = M.Glass })
+		elseif kind == "sample" then
+			local s = part(m, "Canister", Vector3.new(0.9, 0.5, 0.5), CFrame.new(c) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(255, 130, 40) }) :: Part
+			glowing(s, rgb(255, 140, 60), 6, 0.5)
+		elseif kind == "bust" then
+			part(m, "BustBase", Vector3.new(0.8, 0.6, 0.6), CFrame.new(c), { Color = rgb(200, 195, 185), Material = M.Marble })
+			part(m, "BustHead", Vector3.new(0.6, 0.6, 0.6), CFrame.new(c + Vector3.new(0, 0.6, 0)), { Shape = Enum.PartType.Ball, Color = rgb(200, 195, 185), Material = M.Marble })
+		elseif kind == "photo" then
+			part(m, "PhotoFrame", Vector3.new(0.1, 1, 1.2), CFrame.new(c + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, side * 0.2), brass)
+			part(m, "PhotoSun", Vector3.new(0.04, 0.6, 0.6), CFrame.new(c + Vector3.new(-side * 0.07, 0.2, 0)) * CFrame.Angles(0, 0, side * 0.2), { Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(220, 180, 90), CanCollide = false })
+		elseif kind == "rock" then
+			part(m, "Fragment", Vector3.new(0.8, 0.6, 0.7), CFrame.new(c) * CFrame.Angles(0.4, 0.7, 0.2), { Color = rgb(60, 40, 35), Material = M.Basalt })
+		elseif kind == "tape" then
+			part(m, "TapeReel", Vector3.new(0.15, 1, 1), CFrame.new(c + Vector3.new(0, 0.1, 0)), { Shape = Enum.PartType.Cylinder, Color = rgb(30, 30, 32) })
+		elseif kind == "ship" then
+			part(m, "ModelHull", Vector3.new(0.3, 0.3, 1.8), CFrame.new(c), { Color = rgb(200, 202, 205), Material = M.Metal })
+			part(m, "ModelRing", Vector3.new(0.08, 0.9, 0.9), CFrame.new(c) * CFrame.Angles(0, math.pi / 2, 0), { Shape = Enum.PartType.Cylinder, Color = rgb(160, 162, 166), Material = M.Metal })
 		end
-		for _, dy in { -2.15, 2.15 } do
-			part(m, "Frame", Vector3.new(0.35, 0.3, 3.9), CFrame.new(face - side * 0.175, 5.5 + dy, z), gold)
-		end
-		if ph[2] then
-			part(m, "Sun", Vector3.new(0.06, 2.6, 2.6), CFrame.new(face - side * 0.18, 5.5, z),
-				{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = ph[2]:Lerp(Color3.new(0, 0, 0), 0.3), CanCollide = false })
-		end
-		wallSign(m, w, side, z, 2.7, Vector2.new(2.6, 0.55), ph[1], rgb(170, 140, 80), rgb(40, 30, 20), Enum.Font.Garamond)
-		-- Picture light above each frame.
-		part(m, "PictureLightArm", Vector3.new(0.8, 0.1, 0.1), CFrame.new(face - side * 0.4, 8.2, z), gold)
-		local lamp = part(m, "Lamp", Vector3.new(0.4, 0.25, 2.4), CFrame.new(face - side * 0.8, 8.1, z), { Material = M.Neon, Color = rgb(200, 180, 140), CanCollide = false }) :: Part
-		local spot = Instance.new("SpotLight")
-		spot.Face = Enum.NormalId.Bottom
-		spot.Angle = 70
-		spot.Range = 8
-		spot.Brightness = 0.9
-		spot.Color = rgb(255, 225, 180)
-		spot.Parent = lamp
+		local plaque = part(m, "Plaque", Vector3.new(2, 0.5, 0.05), CFrame.new(x, 2.2, z + 1.225), brass) :: Part
+		B.label(plaque, ex[1], Enum.NormalId.Back, rgb(40, 30, 20), Enum.Font.Garamond)
+		local spot = part(m, "Lamp", Vector3.new(0.5, 0.3, 0.5), CFrame.new(x, h - 0.15, z), { Material = M.Neon, Color = rgb(200, 185, 150), CanCollide = false }) :: Part
+		local beam = Instance.new("SpotLight")
+		beam.Face = Enum.NormalId.Bottom
+		beam.Angle = 30
+		beam.Range = 14
+		beam.Brightness = 1.2
+		beam.Color = rgb(255, 230, 190)
+		beam.Parent = spot
 	end
-	-- Velvet rope stanchions keeping visitors back from the walls.
+	-- Company timeline along the left wall.
+	B.onWall(m, w, -1, cz, 8.5, Vector2.new(34, 0.2), 0.15, "TimelineBar", brass)
+	local events = { "2071\nFOUNDED", "2080\nSOL I", "2093\nTOTALITY\nLAUNCHED", "2098\nFIRST\nSAMPLE", "2101\nCONTACT\nLOST", "2105\n?" }
+	for i, ev in events do
+		local z = -5 - (i - 1) * 6.4
+		wallSign(m, w, -1, z, 10.4, Vector2.new(3.2, 2.6), ev, rgb(35, 33, 30), rgb(215, 190, 130), Enum.Font.Garamond)
+		part(m, "TimelineDot", Vector3.new(0.2, 0.5, 0.5), CFrame.new(-w / 2 + 0.25, 8.5, z), { Shape = Enum.PartType.Cylinder, Color = rgb(175, 145, 85), Material = M.Metal })
+	end
+	-- Wall of small Sun photographs on the right, drifting from gold to black.
+	local tones = { rgb(255, 220, 120), rgb(255, 190, 90), rgb(250, 150, 60), rgb(230, 100, 50), rgb(190, 60, 60), rgb(140, 40, 90), rgb(90, 40, 130), rgb(50, 25, 90), rgb(20, 12, 30) }
+	for i = 0, 9 do
+		local col, row = i % 5, math.floor(i / 5)
+		local z, yy = -11 - col * 5, 9 + row * 3.2 - 1.6
+		B.onWall(m, w, 1, z, yy, Vector2.new(2.4, 2.4), 0.12, "PhotoFrame", brass)
+		B.onWall(m, w, 1, z, yy, Vector2.new(2, 2), 0.14, "PhotoBack", { Color = rgb(12, 12, 16) })
+		if tones[i + 1] then
+			part(m, "PhotoSun", Vector3.new(0.04, 1.3, 1.3), CFrame.new(w / 2 - 0.16, yy, z), { Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = tones[i + 1]:Lerp(Color3.new(0, 0, 0), 0.3), CanCollide = false })
+		end
+	end
+	wallSign(m, w, 1, -21, 13.4, Vector2.new(10, 1.2), "SOL - A PORTRAIT OVER 4,811 DAYS", rgb(35, 33, 30), rgb(215, 190, 130), Enum.Font.Garamond)
+	-- Benches facing the orrery.
 	for _, sx in { -1, 1 } do
-		local posts = {}
-		for z = -2.5, -L + 2.5, -4.5 do
-			table.insert(posts, z)
-			part(m, "Stanchion", Vector3.new(0.25, 3, 0.25), CFrame.new(sx * 5, 1.5, z), gold)
-			part(m, "StanchionBase", Vector3.new(0.12, 0.8, 0.8), CFrame.new(sx * 5, 0.06, z) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = gold.Color, Material = gold.Material })
-		end
-		for k = 1, #posts - 1 do
-			local mid = (posts[k] + posts[k + 1]) / 2
-			part(m, "Rope", Vector3.new(4.25, 0.15, 0.15), CFrame.new(sx * 5, 2.55, mid) * CFrame.Angles(0, math.pi / 2, 0), { Shape = Enum.PartType.Cylinder, Color = rgb(120, 25, 30), Material = M.Fabric, CanCollide = false })
-		end
+		part(m, "Bench", Vector3.new(1.6, 1.5, 5), CFrame.new(sx * 5, 0.75, cz), { Color = rgb(60, 45, 35), Material = M.Wood })
 	end
-	for _, z in { -8, -24, -40 } do
-		B.bulb(m, Vector3.new(0, h - 0.8, z), rgb(255, 220, 180), 14, 0.4, 1)
-	end
+	endSign(m, -L, 1, 0, 12.6, Vector2.new(11, 1.2), "SOLSTICE SOLUTIONS HERITAGE EXHIBIT", rgb(35, 33, 30), rgb(215, 190, 130))
+	B.panelGrid(m, w, L, h, 2, 2, p.light, 0.35, 24)
 	return m
 end
 
