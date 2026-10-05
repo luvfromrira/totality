@@ -465,10 +465,11 @@ local function medBay(): Model
 	local steel = { Color = rgb(170, 175, 178), Material = M.Metal }
 	local white = { Color = rgb(225, 228, 225) }
 	-- Reception counter with a ticket display.
-	local counter = part(m, "Counter", Vector3.new(8, 3.5, 2), CFrame.new(-9, 1.75, -27), { Color = rgb(170, 180, 176) }) :: Part
-	B.label(counter, "SOLSTICE MEDICAL - PLEASE WAIT", Enum.NormalId.Back, rgb(50, 70, 65))
+	part(m, "Counter", Vector3.new(8, 3.5, 2), CFrame.new(-9, 1.75, -27), { Color = rgb(170, 180, 176) })
+	local counterSign = part(m, "CounterSign", Vector3.new(6, 1, 0.05), CFrame.new(-9, 2.3, -25.975), { Color = rgb(225, 232, 228) }) :: Part
+	B.label(counterSign, "SOLSTICE MEDICAL - PLEASE WAIT", Enum.NormalId.Back, rgb(50, 80, 72), Enum.Font.GothamBold)
 	part(m, "CounterTop", Vector3.new(8.3, 0.15, 2.3), CFrame.new(-9, 3.575, -27), { Color = rgb(120, 130, 128), Material = M.Marble })
-	part(m, "CounterReturn", Vector3.new(2, 3.5, 4), CFrame.new(-12, 1.75, -24), { Color = rgb(170, 180, 176) })
+	part(m, "CounterReturn", Vector3.new(2, 3.5, 4), CFrame.new(-12, 1.75, -30), { Color = rgb(170, 180, 176) })
 	part(m, "Terminal", Vector3.new(1.4, 1, 0.15), CFrame.new(-9.5, 4.25, -27.4), { Color = rgb(30, 30, 34) })
 	local nowServing = B.onWall(m, w, -1, -27, 7, Vector2.new(3.4, 1.4), 0.15, "Display", { Color = rgb(20, 10, 10), Material = M.Neon }) :: Part
 	B.label(nowServing, "NOW SERVING\n000", Enum.NormalId.Right, rgb(255, 80, 60), Enum.Font.Code)
@@ -671,8 +672,18 @@ local function hygiene(): Model
 	end
 	part(m, "Bench", Vector3.new(1.4, 1.5, 6), CFrame.new(rx - 3.6, 0.75, -27.8), { Color = rgb(150, 120, 90), Material = M.Wood })
 	-- Wet floor sign and a puddle.
-	part(m, "WetFloorSign", Vector3.new(1.2, 2.2, 0.1), CFrame.new(3.6, 1.25, -14) * CFrame.Angles(0.25, 0.4, 0), { Color = rgb(230, 190, 30), Material = M.Plastic })
-	part(m, "Puddle", Vector3.new(0.03, 3, 4), CFrame.new(1.5, 0.015, -16) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(150, 170, 175), Material = M.Glass, Transparency = 0.3, Reflectance = 0.3, CanCollide = false })
+	-- A-frame wet floor sign: two panels leaning together, warning on both faces.
+	local signBase = CFrame.new(3.6, 0, -14) * CFrame.Angles(0, 0.4, 0)
+	for _, f in { 1, -1 } do
+		local panelCf = signBase * CFrame.new(0, 1.06, f * 0.29) * CFrame.Angles(-f * 0.26, 0, 0)
+		local panel = part(m, "WetFloorSign", Vector3.new(1.3, 2.2, 0.08), panelCf, { Color = rgb(235, 195, 30), Material = M.Plastic }) :: Part
+		part(m, "WetFloorStripe", Vector3.new(1.32, 0.18, 0.09), panelCf * CFrame.new(0, 0.85, 0), { Color = rgb(25, 25, 25), CanCollide = false })
+		B.label(panel, "CAUTION\nWET\nFLOOR", if f == 1 then Enum.NormalId.Back else Enum.NormalId.Front, rgb(25, 25, 25), Enum.Font.GothamBlack)
+	end
+	for k, d in { { 1.2, 0, 2.2 }, { 2.2, 0.5, 1.4 }, { 0.6, -0.8, 1 } } do
+		part(m, "Puddle", Vector3.new(0.02, d[3], d[3] * 1.3), CFrame.new(1.5 + d[1], 0.008 + k * 0.005, -16 + d[2]) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(160, 180, 190), Material = M.Glass, Transparency = 0.6, Reflectance = 0.4, CanCollide = false })
+	end
 	B.panelGrid(m, w, L, h, 2, 3, p.light, 0.6)
 	return m
 end
@@ -2735,11 +2746,18 @@ local function security(): Model
 		end
 	end
 	-- Missing-crew board and a keycard reader at the exit.
+	local MISSING = {
+		"CREW 0412\nLAST SEEN\nDECK 3", "CREW 0088\nLAST SEEN\nHYDROPONICS", "CREW 1170\nLAST SEEN\nCRYO BAY",
+		"CREW 0203\nLAST SEEN\nAIRLOCK 3", "CREW 0951\nLAST SEEN\n???", "CREW 0001\nLAST SEEN\nBRIDGE",
+	}
 	local board = B.onWall(m, w, -1, -24, 6, Vector2.new(5, 3), 0.1, "Board", { Color = rgb(160, 125, 90), Material = M.Cardboard }) :: Part
 	for k = 0, 5 do
-		part(m, "Notice", Vector3.new(0.03, 0.8, 0.7), CFrame.new(-w / 2 + 0.115, 5.3 + (k % 2) * 1.2, -25.8 + math.floor(k / 2) * 1.2), { Color = rgb(235, 232, 220), CanCollide = false })
+		local notice = part(m, "Notice", Vector3.new(0.03, 0.9, 1.2), CFrame.new(-w / 2 + 0.115, 5.1 + (k % 2) * 1.15, -25.6 + math.floor(k / 2) * 1.6) * CFrame.Angles(0.04 * (k % 3 - 1), 0, 0),
+			{ Color = rgb(235, 232, 220), CanCollide = false }) :: Part
+		B.label(notice, MISSING[k + 1], Enum.NormalId.Right, rgb(40, 35, 30), Enum.Font.Code)
 	end
-	B.label(board, "MISSING CREW", Enum.NormalId.Right, rgb(160, 30, 30))
+	local header = part(m, "BoardHeader", Vector3.new(0.05, 0.6, 4.6), CFrame.new(-w / 2 + 0.125, 7.1, -24), { Color = rgb(235, 232, 220), CanCollide = false }) :: Part
+	B.label(header, "MISSING CREW", Enum.NormalId.Right, rgb(170, 30, 30), Enum.Font.GothamBold)
 	part(m, "KeycardReader", Vector3.new(0.6, 1, 0.15), CFrame.new(4.2, 4, -L + 0.075), { Color = rgb(30, 30, 34) })
 	part(m, "ReaderLight", Vector3.new(0.2, 0.2, 0.05), CFrame.new(4.2, 4.3, -L + 0.17), { Material = M.Neon, Color = rgb(255, 50, 40), CanCollide = false })
 	wallSign(m, w, 1, -10, 8.4, Vector2.new(4, 1), "SECURITY", rgb(30, 50, 90), rgb(220, 230, 255))
