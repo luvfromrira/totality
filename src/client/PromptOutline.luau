@@ -5,6 +5,9 @@
 ]]
 
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local UserInputService = game:GetService("UserInputService")
+
+local TAP_RADIUS = 90 -- pixels around the object that count as tapping it
 
 local PromptOutline = {}
 
@@ -24,6 +27,31 @@ function PromptOutline.Start()
 		outline.DepthMode = Enum.HighlightDepthMode.Occluded
 		outline.Parent = target
 		outlines[prompt] = outline
+	end)
+	-- Tapping (or clicking) an outlined object triggers its prompt. Research parts
+	-- aren't raycastable, so compare the tap to each object's position on screen.
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed or (input.UserInputType ~= Enum.UserInputType.Touch
+			and input.UserInputType ~= Enum.UserInputType.MouseButton1) then
+			return
+		end
+		local camera = workspace.CurrentCamera
+		local tap = Vector2.new(input.Position.X, input.Position.Y)
+		local best, bestDist = nil, TAP_RADIUS
+		for prompt in outlines do
+			local part = prompt.Parent
+			if part and part:IsA("BasePart") then
+				local point, onScreen = camera:WorldToViewportPoint(part.Position)
+				local dist = (Vector2.new(point.X, point.Y) - tap).Magnitude
+				if onScreen and dist < bestDist then
+					best, bestDist = prompt, dist
+				end
+			end
+		end
+		if best then
+			best:InputHoldBegin()
+			best:InputHoldEnd()
+		end
 	end)
 	ProximityPromptService.PromptHidden:Connect(function(prompt)
 		local outline = outlines[prompt]
