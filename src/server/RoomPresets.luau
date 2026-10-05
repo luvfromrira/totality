@@ -940,7 +940,7 @@ local MEMORIAL_NAMES = {
 	"HIBISCUS GALAXY ROSE", "WILLO WISP", "JANE DOE", "RON FROM ACCOUNTING", "EVERETT HARLOW", "ADDISON MONTGOMERY",
 	"M", "CYNTHIA", "LILLIE", "MONICA STEVENS", "BEABADOOBEE", "TOWA BIRD",
 	"RENEE RAPP", "TATE", "UMBREON", "CORSOLA", "DEWGONG", "SPHEAL",
-	'"DAVE"', "HEROBRINE",
+	'"DAVE"', "HEROBRINE?", "APHELION", "ROOMBA", "NEKO TIFA",
 }
 
 local function candle(m: Model, x: number, y: number, z: number, lit: boolean, height: number)
