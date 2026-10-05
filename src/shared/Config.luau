@@ -21,6 +21,7 @@ Config.ROOMS_BEHIND = 2
 -- Missing presets are skipped and a random room is used instead.
 Config.FIXED_ROOMS = {
 	[1] = "Start",
+	[24] = "MemorialRoom",
 	[50] = "Midpoint",
 	[100] = "Final",
 }

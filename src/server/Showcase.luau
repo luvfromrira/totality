@@ -52,7 +52,7 @@ end
 function Showcase.Build(): CFrame
 	local rooms = RoomPresets.BuildNormal()
 	local special = RoomPresets.BuildSpecial()
-	for _, name in { "Start", "Midpoint", "Final" } do
+	for _, name in { "Start", "MemorialRoom", "Midpoint", "Final" } do
 		table.insert(rooms, special[name])
 	end
 

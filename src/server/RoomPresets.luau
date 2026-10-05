@@ -48,6 +48,7 @@ local PAL = {
 	quarantine = pal(rgb(185, 195, 192), M.SmoothPlastic, rgb(160, 168, 165), M.SmoothPlastic, rgb(175, 182, 180), M.SmoothPlastic, rgb(90, 110, 105), rgb(215, 240, 235)),
 	captain = pal(rgb(105, 78, 58), M.Wood, rgb(35, 40, 60), M.Carpet, rgb(80, 62, 48), M.Wood, rgb(60, 42, 30), rgb(255, 205, 150)),
 	xeno = pal(rgb(90, 100, 98), M.Metal, rgb(50, 56, 55), M.DiamondPlate, rgb(70, 78, 76), M.Metal, rgb(50, 60, 58), rgb(190, 225, 215)),
+	memorial = pal(rgb(95, 75, 62), M.Plaster, rgb(55, 40, 32), M.WoodPlanks, rgb(75, 60, 50), M.Wood, rgb(55, 38, 28), rgb(255, 200, 140)),
 	cosmic = pal(rgb(40, 38, 52), M.Slate, rgb(30, 28, 40), M.Slate, rgb(25, 24, 35), M.Slate, rgb(90, 70, 150), rgb(180, 160, 255)),
 }
 
@@ -932,31 +933,113 @@ local function gym(): Model
 	return m
 end
 
--- Memorial / quiet room. There is room on the wall for more names.
+-- Memorial room (always room 24): pews, a wall of brass name plaques, candles, a book of condolences.
+-- There is room on the wall for more names.
+local MEMORIAL_NAMES = {
+	"ABRAHAM LINCOLN", "DOLLY PARTON", "RYAN", "SEBASTIAN SOLACE", "JEFF", "AMELIA SHEPHERD",
+	"HIBISCUS GALAXY ROSE", "WILLO WISP", "JANE DOE", "RON FROM ACCOUNTING", "EVERETT HARLOW", "ADDISON MONTGOMERY",
+	"M", "CYNTHIA", "LILLIE", "MONICA STEVENS", "BEABADOOBEE", "TOWA BIRD",
+	"RENEE RAPP", "TATE", "UMBREON", "CORSOLA", "DEWGONG", "SPHEAL",
+}
+
+local function candle(m: Model, x: number, y: number, z: number, lit: boolean, height: number)
+	part(m, "Candle", Vector3.new(height, 0.3, 0.3), CFrame.new(x, y + height / 2, z) * CFrame.Angles(0, 0, math.pi / 2),
+		{ Shape = Enum.PartType.Cylinder, Color = rgb(230, 222, 200) })
+	if lit then
+		local flame = part(m, "Flame", Vector3.new(0.12, 0.25, 0.12), CFrame.new(x, y + height + 0.15, z),
+			{ Material = M.Neon, Color = rgb(255, 170, 70), CanCollide = false, CastShadow = false }) :: Part
+		local glow = Instance.new("PointLight")
+		glow.Color = rgb(255, 170, 90)
+		glow.Range = 5
+		glow.Brightness = 0.4
+		glow.Parent = flame
+	end
+end
+
 local function memorial(): Model
-	local m = B.newRoom("MemorialRoom", { Weight = 1, MinRoom = 25 })
-	local w, L, h, p = 22, 28, 12, PAL.quarters
+	local m = B.newRoom("MemorialRoom")
+	local w, L, h, p = 26, 32, 13, PAL.memorial
 	B.shell(m, w, L, h, p)
-	for _, sx in { -1, 1 } do
-		for _, z in { -6, -10, -14, -18 } do
-			local x = sx * 6.5
-			part(m, "Pew", Vector3.new(5.6, 1.6, 1), CFrame.new(x, 0.8, z), { Color = rgb(70, 50, 38), Material = M.Wood })
-			part(m, "Pew", Vector3.new(6, 0.4, 1.4), CFrame.new(x, 1.8, z), { Color = rgb(80, 58, 44), Material = M.Wood })
-			part(m, "Pew", Vector3.new(6, 1.8, 0.3), CFrame.new(x, 2.9, z + 0.55), { Color = rgb(80, 58, 44), Material = M.Wood })
-		end
-		-- Name plaques on the front wall, either side of the door.
-		for col = 0, 2 do
-			for row = 0, 3 do
-				local plate = part(m, "Plaque", Vector3.new(1.6, 0.8, 0.1), CFrame.new(sx * (4.5 + col * 2.2), 2.5 + row * 1.6, -L + 0.05),
-					{ Color = rgb(170, 140, 80), Material = M.Metal }) :: Part
-				B.label(plate, if row == 3 and col == 2 then "" else "- - -", Enum.NormalId.Back, rgb(50, 35, 20))
+	local rand = Random.new(24)
+	local wood = { Color = rgb(70, 48, 34), Material = M.Wood }
+	local darkWood = { Color = rgb(45, 30, 22), Material = M.Wood }
+	local brass = { Color = rgb(175, 145, 85), Material = M.Metal }
+
+	-- Plaque wall: dark wood panels either side of the exit, five rows of three brass plaques each.
+	local slots = {}
+	for row = 0, 4 do
+		for _, side in { -1, 1 } do
+			for col = 0, 2 do
+				table.insert(slots, { side * (4.8 + col * 2.2), 8.6 - row * 1.6 })
 			end
 		end
 	end
-	wallSign(m, w, -1, -12, 7, Vector2.new(7, 1.6), "IN MEMORY OF THE CREW OF THE S.S. TOTALITY")
-	wallSign(m, w, 1, -12, 7, Vector2.new(5, 1.2), "THERE IS ROOM FOR MORE", rgb(30, 25, 22), rgb(190, 170, 140))
-	for _, z in { -6, -16 } do
-		B.bulb(m, Vector3.new(0, h - 0.6, z), p.light, 16, 0.6, 1)
+	for _, side in { -1, 1 } do
+		part(m, "PlaqueWall", Vector3.new(7.2, 8.8, 0.2), CFrame.new(side * 7, 5.4, -L + 0.1), darkWood)
+		part(m, "PlaqueWallTrim", Vector3.new(7.6, 0.3, 0.35), CFrame.new(side * 7, 9.95, -L + 0.175), brass)
+	end
+	for i, slot in slots do
+		local plate = part(m, "Plaque", Vector3.new(1.9, 0.8, 0.06), CFrame.new(slot[1], slot[2], -L + 0.23), brass) :: Part
+		B.label(plate, MEMORIAL_NAMES[i] or "", Enum.NormalId.Back, rgb(45, 32, 18), Enum.Font.Garamond)
+	end
+	-- Dead flowers in vases along the base of the wall.
+	for _, x in { -8.5, -5, 5, 8.5 } do
+		part(m, "Vase", Vector3.new(1.2, 0.7, 0.7), CFrame.new(x, 0.6, -L + 0.9) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(60, 62, 70), Material = M.Glass })
+		for k = 1, 4 do
+			part(m, "DeadFlower", Vector3.new(0.08, 1.4, 0.08), CFrame.new(x, 1.8, -L + 0.9) * CFrame.Angles(rand:NextNumber(-0.4, 0.4), 0, rand:NextNumber(-0.4, 0.4)) * CFrame.new(0, 0.3, 0),
+				{ Color = rgb(80, 70, 45), CanCollide = false })
+			part(m, "Petals", Vector3.new(0.35, 0.2, 0.35), CFrame.new(x + rand:NextNumber(-0.4, 0.4), 2.4 + rand:NextNumber(-0.2, 0.2), -L + 0.9 + rand:NextNumber(-0.3, 0.3)),
+				{ Shape = Enum.PartType.Ball, Color = if k % 2 == 0 then rgb(90, 40, 45) else rgb(110, 95, 70), CanCollide = false })
+		end
+	end
+	-- Solstice sun emblem above the exit.
+	local sun = part(m, "SunEmblem", Vector3.new(0.1, 2.4, 2.4), CFrame.new(0, 10.9, -L + 0.15) * CFrame.Angles(0, math.pi / 2, 0),
+		{ Shape = Enum.PartType.Cylinder, Material = M.Neon, Color = rgb(150, 85, 30), CanCollide = false }) :: Part
+	glowing(sun, rgb(255, 160, 80), 10, 0.4)
+	for k = 0, 7 do
+		part(m, "SunRay", Vector3.new(0.25, 0.7, 0.08), CFrame.new(0, 10.9, -L + 0.12) * CFrame.Angles(0, 0, k * math.pi / 4) * CFrame.new(0, 1.5, 0), brass)
+	end
+
+	-- Pews with carved end panels and kneelers.
+	for _, sx in { -1, 1 } do
+		for _, z in { -7, -10.5, -14, -17.5, -21, -24.5 } do
+			local x = sx * 6.6
+			part(m, "PewSeat", Vector3.new(5.6, 0.35, 1.3), CFrame.new(x, 1.75, z), wood)
+			part(m, "PewBack", Vector3.new(5.6, 2, 0.25), CFrame.new(x, 2.95, z + 0.6), wood)
+			for _, dx in { -2.95, 2.95 } do
+				part(m, "PewEnd", Vector3.new(0.3, 3.2, 1.6), CFrame.new(x + dx, 1.6, z + 0.1), darkWood)
+			end
+			part(m, "Kneeler", Vector3.new(5.6, 0.3, 0.5), CFrame.new(x, 0.35, z - 1.05), { Color = rgb(90, 30, 35), Material = M.Fabric })
+		end
+	end
+	part(m, "Runner", Vector3.new(4, 0.04, L - 3), CFrame.new(0, 0.02, -L / 2 - 0.5), { Color = rgb(90, 30, 35), Material = M.Carpet, CanCollide = false })
+
+	-- Candle shelves on both side walls; most of the candles have gone out.
+	for _, side in { -1, 1 } do
+		for _, zc in { -11, -21 } do
+			B.onWall(m, w, side, zc, 3.5, Vector2.new(5, 0.2), 0.9, "CandleShelf", darkWood)
+			for k = 0, 6 do
+				local lit = rand:NextNumber() < 0.35
+				candle(m, side * (w / 2 - 0.45), 3.6, zc - 2.1 + k * 0.7, lit, rand:NextNumber(0.4, 1))
+			end
+		end
+	end
+
+	-- Book of condolences on a lectern by the entrance.
+	part(m, "Lectern", Vector3.new(1.2, 3.4, 1), CFrame.new(-6, 1.7, -3), darkWood)
+	part(m, "LecternTop", Vector3.new(1.6, 0.15, 1.3), CFrame.new(-6, 3.5, -3) * CFrame.Angles(-0.3, 0, 0), darkWood)
+	for _, dx in { -0.35, 0.35 } do
+		local page = part(m, "Page", Vector3.new(0.65, 0.04, 0.9), CFrame.new(-6 + dx, 3.62, -3) * CFrame.Angles(-0.3, 0, dx * 0.3), { Color = rgb(235, 228, 205), CanCollide = false }) :: Part
+		if dx > 0 then
+			B.label(page, "SIGN HERE", Enum.NormalId.Top, rgb(60, 50, 40), Enum.Font.Garamond)
+		end
+	end
+
+	wallSign(m, w, -1, -16, 9.5, Vector2.new(9, 1.6), "IN MEMORY OF THE CREW\nOF THE S.S. TOTALITY", rgb(45, 30, 22), rgb(210, 180, 120), Enum.Font.Garamond)
+	wallSign(m, w, 1, -16, 9.5, Vector2.new(6, 1), "THERE IS ROOM FOR MORE", rgb(30, 25, 22), rgb(190, 170, 140), Enum.Font.Garamond)
+	for _, z in { -8, -20 } do
+		B.bulb(m, Vector3.new(0, h - 0.8, z), p.light, 16, 0.5, 1.2)
 	end
 	return m
 end
@@ -2081,7 +2164,7 @@ function RoomPresets.BuildNormal(): { Model }
 		corridor(), bend(1), bend(-1), stairwell(), office(), messHall(), quarters(), medBay(),
 		laboratory(), hygiene(), overflow(), pool(), hangar(), solarControl(), archive(), promenade(),
 		cryo(), observatory(),
-		airlock(), coolant(), suitStorage(), hydroponics(), gym(), memorial(), library(), dormitory(),
+		airlock(), coolant(), suitStorage(), hydroponics(), gym(), library(), dormitory(),
 		laundry(), galley(), comms(), captain(), conference(), workshop(), cargo(), elevators(),
 		infirmary(), helioscope(), xenolab(), quarantine(),
 		bridge(), capacitors(), tunnel(), security(), brig(), recycling(), lounge(), simulationBay(),
@@ -2090,7 +2173,7 @@ function RoomPresets.BuildNormal(): { Model }
 end
 
 function RoomPresets.BuildSpecial(): { [string]: Model }
-	return detailed({ Start = start(), Midpoint = midpoint(), Final = final() })
+	return detailed({ Start = start(), MemorialRoom = memorial(), Midpoint = midpoint(), Final = final() })
 end
 
 return RoomPresets
