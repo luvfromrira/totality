@@ -2758,6 +2758,77 @@ local function brig(): Model
 	local yellow = { Color = rgb(200, 160, 40), Material = M.Metal }
 	local cellsPerSide, cellLen = 8, 6.5
 	local zb = function(k: number) return -2 - k * cellLen end
+	local wreckTornCell, wreckGoneCell
+	local wreck = Random.new(22)
+	local rubble = { Color = rgb(95, 95, 98), Material = M.Concrete }
+
+	-- A bar made of several bent segments; each step is { length, pitch, roll } relative to the last.
+	local function bentBar(start: CFrame, steps: { { number } })
+		local cf = start
+		for _, st in steps do
+			cf = cf * CFrame.Angles(st[2], 0, st[3])
+			part(m, "BentBar", Vector3.new(0.2, st[1], 0.2), cf * CFrame.new(0, st[1] / 2, 0), bar)
+			cf = cf * CFrame.new(0, st[1], 0)
+		end
+	end
+	local function rubbleAround(center: Vector3, spread: Vector3, count: number)
+		for _ = 1, count do
+			local sz = wreck:NextNumber(0.3, 1.1)
+			local pos = center + Vector3.new(wreck:NextNumber(-spread.X, spread.X), 0, wreck:NextNumber(-spread.Z, spread.Z))
+			part(m, "Rubble", Vector3.new(sz, sz * wreck:NextNumber(0.5, 0.9), sz * wreck:NextNumber(0.7, 1.3)),
+				CFrame.new(pos.X, center.Y + sz * 0.3, pos.Z) * CFrame.Angles(wreck:NextNumber(-0.5, 0.5), wreck:NextNumber(0, 3), wreck:NextNumber(-0.5, 0.5)), rubble)
+		end
+	end
+	local function gouges(center: Vector3, count: number, yaw: number)
+		for k = 1, count do
+			part(m, "Gouge", Vector3.new(0.12, 0.03, wreck:NextNumber(1.5, 3)), CFrame.new(center + Vector3.new(0, 0.015, (k - count / 2) * 0.35)) * CFrame.Angles(0, yaw + wreck:NextNumber(-0.1, 0.1), 0),
+				{ Color = rgb(20, 20, 22), CanCollide = false })
+		end
+	end
+
+	-- Ground cell whose bars were torn outward: stubs, one bar bowed out, one ripped away, the crossbar snapped.
+	wreckTornCell = function(x: number, base: number, mid: number, side: number)
+		local out = side -- roll toward the aisle
+		local b3, b4, b5 = mid - 2.8 + 3 * 0.8, mid - 2.8 + 4 * 0.8, mid - 2.8 + 5 * 0.8
+		bentBar(CFrame.new(x, base, b3), { { 1.4, 0, 0 }, { 0.9, 0, out * 0.9 }, { 0.5, 0.3, out * 0.4 } })
+		bentBar(CFrame.new(x, base + 9.3, b3) * CFrame.Angles(math.pi, 0, 0), { { 1.8, 0, -out * 0.3 }, { 1, 0.4, -out * 0.6 } })
+		bentBar(CFrame.new(x, base, b4), { { 3.4, 0, out * 0.35 }, { 2.9, 0, -out * 0.35 }, { 3.4, 0, -out * 0.35 } })
+		bentBar(CFrame.new(x, base, b5), { { 0.6, 0, out * 1.1 }, { 0.5, 0.5, out * 0.5 } })
+		bentBar(CFrame.new(x, base + 9.3, b5) * CFrame.Angles(math.pi, 0, 0), { { 1.5, 0, out * 0.2 }, { 0.8, -0.5, out * 0.7 } })
+		-- The ripped-away length of bar, bent double on the floor.
+		bentBar(CFrame.new(x - out * 2.6, base + 0.11, mid - 0.5) * CFrame.Angles(0, 0.4, 0) * CFrame.Angles(math.pi / 2, 0, 0), { { 3, 0, 0 }, { 2.4, 0, out * 1.1 } })
+		-- Snapped crossbar: one half hanging off its weld, the other on the floor.
+		part(m, "CrossBar", Vector3.new(0.3, 0.3, 2.8), CFrame.new(x, base + 2.3, mid - 1.8) * CFrame.Angles(0.55, 0, 0), bar)
+		part(m, "CrossBar", Vector3.new(0.3, 0.3, 2.9), CFrame.new(x - out * 1.6, base + 0.15, mid + 1.4) * CFrame.Angles(0, 0.7, 0), bar)
+		rubbleAround(Vector3.new(x - out * 1.8, base, mid), Vector3.new(1.4, 0, 2.6), 7)
+		gouges(Vector3.new(x - out * 2, base, mid), 4, out * 0.5)
+	end
+
+	-- Upper cell whose bars were ripped out entirely and thrown over the catwalk.
+	wreckGoneCell = function(x: number, base: number, mid: number, side: number)
+		local out = side
+		for b = 0, 7 do
+			local bz = mid - 2.8 + b * 0.8
+			bentBar(CFrame.new(x, base + 9.3, bz) * CFrame.Angles(math.pi, 0, 0), { { wreck:NextNumber(0.4, 1.6), 0, wreck:NextNumber(-0.3, 0.3) }, { wreck:NextNumber(0.3, 0.9), wreck:NextNumber(-0.4, 0.4), -out * wreck:NextNumber(0.3, 0.9) } })
+			bentBar(CFrame.new(x, base, bz), { { wreck:NextNumber(0.25, 0.9), 0, out * wreck:NextNumber(0.2, 0.8) } })
+		end
+		-- Top crossbar torn loose at one end and hanging.
+		part(m, "CrossBar", Vector3.new(0.3, 0.3, 6), CFrame.new(x, base + 9.3, mid + 3) * CFrame.Angles(-0.65, 0, 0) * CFrame.new(0, 0, -3), bar)
+		-- Broken lip of the tier slab and the bent railing where it all went over.
+		rubbleAround(Vector3.new(x - out * 1.6, base, mid), Vector3.new(0.9, 0, 2.2), 5)
+		gouges(Vector3.new(x - out * 1.4, base, mid), 4, 0.2)
+		part(m, "BentRailing", Vector3.new(0.12, 0.12, 2.6), CFrame.new(side * 8.15, base + 0.9, -35.6) * CFrame.Angles(0.8, 0, 0), { Color = rgb(200, 160, 40), Material = M.Metal })
+		part(m, "BentRailing", Vector3.new(0.12, 0.12, 2.2), CFrame.new(side * 8.3, base + 0.5, -40) * CFrame.Angles(-0.9, 0.3, 0), { Color = rgb(200, 160, 40), Material = M.Metal })
+		-- The bars themselves, tangled in a heap on the floor below.
+		for k = 0, 6 do
+			-- Lying flat (bends are sideways only), stacked so they pile instead of sinking into the floor.
+			local start = CFrame.new(x - out * wreck:NextNumber(3.5, 6.5), 0.11 + k * 0.2, mid + wreck:NextNumber(-2.5, 2.5)) * CFrame.Angles(0, wreck:NextNumber(0, math.pi * 2), 0) * CFrame.Angles(math.pi / 2, 0, 0)
+			bentBar(start, { { wreck:NextNumber(2, 3.5), 0, wreck:NextNumber(-0.8, 0.8) }, { wreck:NextNumber(1.5, 3), 0, wreck:NextNumber(-1, 1) }, { wreck:NextNumber(0.8, 2), 0, wreck:NextNumber(-0.6, 0.6) } })
+		end
+		bentBar(CFrame.new(x - out * 4.5, 1.6, mid + 1) * CFrame.Angles(0, 0.9, 0) * CFrame.Angles(math.pi / 2, 0, 0), { { 3.2, 0, 0.5 }, { 2.8, 0, -0.7 } })
+		rubbleAround(Vector3.new(x - out * 5, 0, mid), Vector3.new(1.8, 0, 3), 9)
+		gouges(Vector3.new(x - out * 5, 0, mid), 5, 0.8)
+	end
 	local cellNo = 0
 	for _, side in { -1, 1 } do
 		-- Upper-tier floor + catwalk, its supports and railing.
@@ -2770,7 +2841,7 @@ local function brig(): Model
 			part(m, "RailPost", Vector3.new(0.15, 1.2, 0.15), CFrame.new(side * 8.15, 10.6, z), yellow)
 		end
 		-- Railing runs, with a gap on the left where the ladder comes up.
-		local runs = if side == -1 then { { -2, -48.5 }, { -51.5, -54 } } else { { -2, -54 } }
+		local runs = if side == -1 then { { -2, -35 }, { -40.5, -48.5 }, { -51.5, -54 } } else { { -2, -54 } }
 		for _, r in runs do
 			for _, y in { 10.6, 11.15 } do
 				part(m, "Railing", Vector3.new(0.12, 0.12, r[1] - r[2]), CFrame.new(side * 8.15, y, (r[1] + r[2]) / 2), yellow)
@@ -2784,19 +2855,20 @@ local function brig(): Model
 				local gone = level == 2 and side == -1 and c == 5
 				for b = 0, 7 do
 					local bz = mid - 2.8 + b * 0.8
-					if torn and b >= 3 and b <= 5 then
-						part(m, "Bar", Vector3.new(0.2, 0.2, 7), CFrame.new(side * 9.2, 0.15, bz) * CFrame.Angles(0, 0.35 * (b - 4), 0), bar)
-					elseif not gone then
+					if not gone and not (torn and b >= 3 and b <= 5) then
 						part(m, "Bar", Vector3.new(0.2, 9.3, 0.2), CFrame.new(side * 11.1, base + 4.65, bz), bar)
 					end
 				end
-				if gone then
-					for b = 0, 4 do
-						part(m, "FallenBar", Vector3.new(0.2, 0.2, 8.5), CFrame.new(side * (6 - b * 0.4), 0.12 + b * 0.02, mid + b * 0.5) * CFrame.Angles(0, 0.3 + b * 0.25, 0), bar)
-					end
-				else
+				if torn then
+					wreckTornCell(side * 11.1, base, mid, side)
+				elseif gone then
+					wreckGoneCell(side * 11.1, base, mid, side)
+				end
+				if not gone then
 					for _, y in { 3, 9.15 } do
-						part(m, "CrossBar", Vector3.new(0.3, 0.3, 6), CFrame.new(side * 11.1, base + y, mid), bar)
+						if not (torn and y == 3) then
+							part(m, "CrossBar", Vector3.new(0.3, 0.3, 6), CFrame.new(side * 11.1, base + y, mid), bar)
+						end
 					end
 				end
 				if not gone then
