@@ -50,6 +50,7 @@ local PAL = {
 	xeno = pal(rgb(90, 100, 98), M.Metal, rgb(50, 56, 55), M.DiamondPlate, rgb(70, 78, 76), M.Metal, rgb(50, 60, 58), rgb(190, 225, 215)),
 	memorial = pal(rgb(95, 75, 62), M.Plaster, rgb(55, 40, 32), M.WoodPlanks, rgb(75, 60, 50), M.Wood, rgb(55, 38, 28), rgb(255, 200, 140)),
 	control = pal(rgb(70, 74, 82), M.Metal, rgb(45, 48, 54), M.DiamondPlate, rgb(55, 58, 64), M.Metal, rgb(50, 54, 62), rgb(200, 210, 230)),
+	galley = pal(rgb(200, 202, 198), M.CeramicTiles, rgb(120, 125, 125), M.CeramicTiles, rgb(170, 172, 170), M.SmoothPlastic, rgb(90, 95, 100), rgb(235, 240, 235)),
 	cosmic = pal(rgb(40, 38, 52), M.Slate, rgb(30, 28, 40), M.Slate, rgb(25, 24, 35), M.Slate, rgb(90, 70, 150), rgb(180, 160, 255)),
 }
 
@@ -1614,25 +1615,171 @@ local function laundry(): Model
 	return m
 end
 
--- Galley kitchen.
+-- Galley: a working ship's kitchen frozen mid-service. A range with one burner still glowing under a pot,
+-- an extractor hood, a prep island under a hanging pot rack, sinks and dish racks, a walk-in freezer.
 local function galley(): Model
 	local m = B.newRoom("Galley", { Weight = 2, MinRoom = 3 })
-	local w, L, h, p = 26, 30, 10, PAL.mess
+	local w, L, h, p = 26, 32, 11, PAL.galley
 	B.shell(m, w, L, h, p)
-	part(m, "Counter", Vector3.new(2.5, 3.4, 24), CFrame.new(w / 2 - 1.25, 1.7, -15), { Color = rgb(150, 152, 155), Material = M.Metal })
-	for _, z in { -8, -10 } do
-		for _, dx in { -0.5, 0.5 } do
-			part(m, "Burner", Vector3.new(0.8, 0.05, 0.8), CFrame.new(w / 2 - 1.25 + dx, 3.425, z + dx), { Color = rgb(20, 20, 20), CanCollide = false })
+	local rand = Random.new(3)
+	local steel = { Color = rgb(175, 178, 182), Material = M.Metal }
+	local darkSteel = { Color = rgb(70, 72, 78), Material = M.Metal }
+	local black = { Color = rgb(22, 22, 24) }
+	local tile = { Color = rgb(210, 212, 205), Material = M.CeramicTiles }
+	local rotten = { rgb(70, 60, 30), rgb(60, 50, 40), rgb(90, 80, 40), rgb(50, 60, 35) }
+	local function counter(x: number, z0: number, z1: number, side: number)
+		local len, zc = z0 - z1, (z0 + z1) / 2
+		part(m, "CounterBase", Vector3.new(2.5, 3.2, len), CFrame.new(x, 1.6, zc), steel)
+		part(m, "CounterTop", Vector3.new(2.7, 0.15, len), CFrame.new(x - side * 0.1, 3.275, zc), { Color = rgb(195, 198, 202), Material = M.Metal })
+		for z = z0 - 1.5, z1 + 1.5, -3 do
+			part(m, "CabinetSeam", Vector3.new(0.05, 2.6, 0.06), CFrame.new(x - side * 1.275, 1.6, z), darkSteel)
+		end
+		B.onWall(m, w, side, zc, 4.55, Vector2.new(len, 2.4), 0.05, "Backsplash", tile)
+	end
+
+	-- RIGHT WALL: counter runs either side of a big range with an extractor hood.
+	local rx = w / 2 - 1.25
+	counter(rx, -2.5, -9.5, 1)
+	counter(rx, -16.5, -27.5, 1)
+	part(m, "Range", Vector3.new(2.5, 3.3, 7), CFrame.new(rx, 1.65, -13), darkSteel)
+	part(m, "RangeTop", Vector3.new(2.5, 0.12, 7), CFrame.new(rx, 3.36, -13), black)
+	for i = 0, 5 do
+		local bx, bz = rx + (if i % 2 == 0 then -0.6 else 0.6), -15.2 + math.floor(i / 2) * 2.2
+		local lit = i == 3
+		part(m, "Burner", Vector3.new(0.06, 0.9, 0.9), CFrame.new(bx, 3.45, bz) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Material = if lit then M.Neon else M.Metal, Color = if lit then rgb(200, 50, 20) else rgb(45, 45, 48), CanCollide = false })
+		if lit then
+			-- A pot left on the one burner that never went out.
+			local pot = part(m, "StockPot", Vector3.new(1.3, 1.2, 1.2), CFrame.new(bx, 4.13, bz) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(150, 152, 156), Material = M.Metal }) :: Part
+			glowing(pot, rgb(255, 90, 40), 6, 0.5)
 		end
 	end
-	part(m, "Island", Vector3.new(3, 3.4, 10), CFrame.new(-6, 1.7, -14), { Color = rgb(150, 152, 155), Material = M.Metal })
-	part(m, "Fridge", Vector3.new(3, 8, 3), CFrame.new(-w / 2 + 1.5, 4, -L + 1.5), { Color = rgb(200, 202, 205), Material = M.Metal })
-	for _, z in { -12, -16 } do
-		part(m, "Pot", Vector3.new(1, 1, 1), CFrame.new(-6, 3.9, z) * CFrame.Angles(0, 0, math.pi / 2),
-			{ Shape = Enum.PartType.Cylinder, Color = rgb(120, 122, 126), Material = M.Metal })
+	part(m, "Frypan", Vector3.new(0.12, 1.1, 1.1), CFrame.new(rx - 0.6, 3.51, -15.2) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(35, 35, 38), Material = M.Metal })
+	part(m, "FrypanHandle", Vector3.new(0.12, 0.08, 1.1), CFrame.new(rx - 1.5, 3.53, -15.2) * CFrame.Angles(0, 0.3, 0), black)
+	for _, dz in { -1.7, 1.7 } do
+		part(m, "OvenDoor", Vector3.new(0.06, 2, 3), CFrame.new(rx - 1.33, 1.5, -13 + dz), darkSteel)
+		part(m, "OvenWindow", Vector3.new(0.04, 0.9, 1.8), CFrame.new(rx - 1.37, 1.7, -13 + dz), { Color = rgb(20, 20, 22), Material = M.Glass, Reflectance = 0.2 })
+		part(m, "OvenHandle", Vector3.new(0.15, 0.12, 2.2), CFrame.new(rx - 1.45, 2.6, -13 + dz), steel)
 	end
-	wallSign(m, w, -1, -8, 6.5, Vector2.new(7, 1.4), "ALL CREW MEALS ARE MANDATORY")
-	B.panelGrid(m, w, L, h, 2, 3, p.light, 0.6)
+	part(m, "Hood", Vector3.new(3, 1.4, 7.4), CFrame.new(w / 2 - 1.5, 7.9, -13), steel)
+	part(m, "HoodDuct", Vector3.new(1.6, h - 8.6, 2.4), CFrame.new(w / 2 - 0.8, 8.6 + (h - 8.6) / 2, -13), steel)
+	local hoodLight = part(m, "Lamp", Vector3.new(1.6, 0.1, 5), CFrame.new(w / 2 - 1.6, 7.15, -13), { Material = M.Neon, Color = rgb(200, 190, 160), CanCollide = false }) :: Part
+	local hl = Instance.new("SurfaceLight")
+	hl.Face = Enum.NormalId.Bottom
+	hl.Range = 8
+	hl.Brightness = 0.6
+	hl.Color = rgb(255, 230, 190)
+	hl.Parent = hoodLight
+	-- Utensils on the right counters.
+	part(m, "Mixer", Vector3.new(1, 1.6, 1.2), CFrame.new(rx, 4.15, -5), { Color = rgb(170, 40, 35) })
+	part(m, "MixBowl", Vector3.new(0.8, 0.9, 0.9), CFrame.new(rx - 0.2, 3.75, -7.2) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(190, 192, 196), Material = M.Metal })
+	for k = 0, 3 do
+		part(m, "Tray", Vector3.new(1.4, 0.08, 2), CFrame.new(rx, 3.39 + k * 0.09, -20), { Color = rgb(180, 180, 175), Material = M.Metal })
+	end
+	part(m, "RiceCooker", Vector3.new(1, 0.9, 1), CFrame.new(rx, 3.8, -24) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(220, 220, 215) })
+
+	-- LEFT WALL: double sink with a dish rack, shelves of jars, then a prep counter with a knife strip.
+	local lx = -w / 2 + 1.25
+	counter(lx, -2.5, -14.5, -1)
+	counter(lx, -16.5, -27.5, -1)
+	for _, dz in { -1.3, 1.3 } do
+		part(m, "SinkBasin", Vector3.new(1.8, 0.04, 2.2), CFrame.new(lx + 0.1, 3.37, -8.5 + dz), { Color = rgb(40, 42, 44) })
+	end
+	part(m, "Faucet", Vector3.new(0.18, 1.4, 0.18), CFrame.new(lx - 0.9, 4.05, -8.5), steel)
+	part(m, "Spout", Vector3.new(1, 0.15, 0.15), CFrame.new(lx - 0.45, 4.7, -8.5), steel)
+	part(m, "DishRack", Vector3.new(1.6, 0.1, 2.6), CFrame.new(lx + 0.1, 3.4, -4.6), steel)
+	for k = 0, 5 do
+		part(m, "Plate", Vector3.new(0.06, 0.9, 0.9), CFrame.new(lx + 0.1, 3.9, -5.7 + k * 0.42), { Shape = Enum.PartType.Cylinder, Color = rgb(230, 228, 220) })
+	end
+	part(m, "Dishes", Vector3.new(1.4, 0.6, 1.8), CFrame.new(lx + 0.1, 3.67, -12.6), { Color = rgb(150, 150, 140) })
+	for _, y in { 6.6, 8.2 } do
+		B.onWall(m, w, -1, -8.5, y, Vector2.new(11, 0.15), 1, "Shelf", steel)
+		for k = 0, 9 do
+			local jh = rand:NextNumber(0.6, 1)
+			part(m, "Jar", Vector3.new(jh, 0.45, 0.45), CFrame.new(-w / 2 + 0.5, y + 0.075 + jh / 2, -13.5 + k * 1.05) * CFrame.Angles(0, 0, math.pi / 2),
+				{ Shape = Enum.PartType.Cylinder, Color = rgb(rand:NextInteger(120, 210), rand:NextInteger(90, 170), rand:NextInteger(50, 110)), Material = M.Glass, Transparency = 0.25 })
+		end
+	end
+	-- Prep counter: cutting boards, a cleaver, rotting vegetables, a magnetic knife strip.
+	for _, z in { -19, -24 } do
+		part(m, "CuttingBoard", Vector3.new(1.4, 0.12, 2), CFrame.new(lx + 0.2, 3.41, z), { Color = rgb(160, 120, 80), Material = M.Wood })
+		for _ = 1, 4 do
+			part(m, "Vegetable", Vector3.new(rand:NextNumber(0.3, 0.6), rand:NextNumber(0.25, 0.45), rand:NextNumber(0.3, 0.7)),
+				CFrame.new(lx + 0.2 + rand:NextNumber(-0.4, 0.4), 3.62, z + rand:NextNumber(-0.7, 0.7)) * CFrame.Angles(0, rand:NextNumber(0, 3), 0),
+				{ Color = rotten[rand:NextInteger(1, #rotten)], Material = M.Ground, CanCollide = false })
+		end
+	end
+	part(m, "Cleaver", Vector3.new(0.5, 0.05, 1), CFrame.new(lx + 0.5, 3.5, -21.5) * CFrame.Angles(0, 0.5, 0), steel)
+	B.onWall(m, w, -1, -21.5, 5.6, Vector2.new(3, 0.3), 0.08, "KnifeStrip", black)
+	for k = -2, 2 do
+		if k ~= 1 then
+			part(m, "Knife", Vector3.new(0.04, 1.1, 0.2), CFrame.new(-w / 2 + 0.11, 5.2, -21.5 + k * 0.55), steel)
+		end
+	end
+	-- Order ticket rail with the last orders still clipped to it.
+	B.onWall(m, w, -1, -22, 7.6, Vector2.new(5, 0.2), 0.15, "TicketRail", steel)
+	for k = 0, 3 do
+		local t = part(m, "Ticket", Vector3.new(0.03, 1, 0.8), CFrame.new(-w / 2 + 0.17, 7, -23.8 + k * 1.2) * CFrame.Angles(rand:NextNumber(-0.1, 0.1), 0, 0), { Color = rgb(240, 238, 225), CanCollide = false }) :: Part
+		B.label(t, if k == 3 then "MESS\n18:00\nx214" else "MESS\n12:00", Enum.NormalId.Right, rgb(40, 40, 40), Enum.Font.Code)
+	end
+
+	-- CENTRE-LEFT: prep island under a hanging pot rack.
+	local ix, iz = -6, -15
+	for _, dx in { -1.35, 1.35 } do
+		for _, dz in { -4.85, 4.85 } do
+			part(m, "IslandLeg", Vector3.new(0.3, 3.2, 0.3), CFrame.new(ix + dx, 1.6, iz + dz), steel)
+		end
+	end
+	part(m, "IslandTop", Vector3.new(3.3, 0.15, 10.3), CFrame.new(ix, 3.275, iz), { Color = rgb(195, 198, 202), Material = M.Metal })
+	part(m, "IslandShelf", Vector3.new(2.8, 0.1, 9.6), CFrame.new(ix, 0.8, iz), darkSteel)
+	for k = 0, 2 do
+		part(m, "StockPot", Vector3.new(1, 1, 1), CFrame.new(ix + (k - 1) * 0.9, 1.35, iz + 2), { Shape = Enum.PartType.Cylinder, Color = rgb(150, 152, 156), Material = M.Metal })
+	end
+	part(m, "Ladle", Vector3.new(0.1, 0.1, 1.4), CFrame.new(ix + 0.6, 3.41, iz - 2) * CFrame.Angles(0, 0.4, 0), steel)
+	part(m, "Flour", Vector3.new(1, 1.3, 0.8), CFrame.new(ix - 0.7, 4, iz - 3.5), { Color = rgb(225, 220, 200), Material = M.Fabric })
+	part(m, "Spill", Vector3.new(0.03, 1.4, 1.8), CFrame.new(ix - 0.3, 3.365, iz - 1.8) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(230, 228, 215), CanCollide = false })
+	part(m, "PotRack", Vector3.new(2.4, 0.15, 8), CFrame.new(ix, 8, iz), darkSteel)
+	for _, dz in { -3.5, 3.5 } do
+		part(m, "RackChain", Vector3.new(0.08, h - 8.08, 0.08), CFrame.new(ix, 8.08 + (h - 8.08) / 2, iz + dz), darkSteel)
+	end
+	for k = 0, 5 do
+		local z = iz - 3 + k * 1.2
+		local big = k % 2 == 0
+		part(m, "PotHook", Vector3.new(0.05, 0.5, 0.05), CFrame.new(ix + (if big then -0.6 else 0.6), 7.67, z), darkSteel)
+		part(m, if big then "HangingPot" else "HangingPan", if big then Vector3.new(0.8, 0.9, 0.9) else Vector3.new(0.1, 0.9, 0.9),
+			CFrame.new(ix + (if big then -0.6 else 0.6), 6.95, z) * (if big then CFrame.Angles(0, 0, math.pi / 2) else CFrame.Angles(0, math.pi / 2, 0)),
+			{ Shape = Enum.PartType.Cylinder, Color = if big then rgb(150, 152, 156) else rgb(40, 40, 42), Material = M.Metal })
+	end
+
+	-- FAR WALL: walk-in freezer door rimmed with frost, and ration crates with a trolley.
+	local fx = -8
+	for _, dx in { -2.3, 2.3 } do
+		part(m, "FreezerFrame", Vector3.new(0.5, 8, 0.6), CFrame.new(fx + dx, 4, -L + 0.3), darkSteel)
+	end
+	part(m, "FreezerFrame", Vector3.new(5.1, 0.5, 0.6), CFrame.new(fx, 8.25, -L + 0.3), darkSteel)
+	part(m, "FreezerDoor", Vector3.new(4.1, 7.8, 0.4), CFrame.new(fx, 3.9, -L + 0.2), { Color = rgb(190, 205, 215), Material = M.Metal })
+	part(m, "FreezerHandle", Vector3.new(0.2, 1.8, 0.25), CFrame.new(fx + 1.5, 4, -L + 0.52), steel)
+	part(m, "FreezerWindow", Vector3.new(1.2, 1.2, 0.05), CFrame.new(fx, 6, -L + 0.42), { Color = rgb(200, 225, 240), Material = M.Ice, Transparency = 0.2 })
+	part(m, "Frost", Vector3.new(5, 0.04, 2.5), CFrame.new(fx, 0.02, -L + 1.85), { Color = rgb(210, 230, 245), Material = M.Ice, CanCollide = false, Transparency = 0.2 })
+	endSign(m, -L, 1, fx, 9.5, Vector2.new(4.6, 0.9), "COLD STORAGE  -18 C", rgb(30, 50, 80), rgb(200, 225, 255))
+	for _, c in { { 7.5, 1.25, -30, 2.5 }, { 10.2, 1.25, -30, 2.5 }, { 8.8, 3.75, -30.2, 2.5 }, { 5, 1, -30.5, 2 } } do
+		local cr = part(m, "RationCrate", Vector3.new(c[4], c[4], c[4]), CFrame.new(c[1], c[2], c[3]) * CFrame.Angles(0, rand:NextNumber(-0.1, 0.1), 0), { Color = rgb(70, 90, 70), Material = M.Metal }) :: Part
+		B.label(cr, "RATIONS", Enum.NormalId.Back, rgb(220, 220, 200), Enum.Font.Code)
+	end
+	part(m, "Trolley", Vector3.new(2, 0.15, 3), CFrame.new(6, 2.4, -22), steel)
+	part(m, "TrolleyShelf", Vector3.new(2, 0.15, 3), CFrame.new(6, 0.8, -22), steel)
+	for _, o in { Vector3.new(-0.9, 0, -1.4), Vector3.new(0.9, 0, -1.4), Vector3.new(-0.9, 0, 1.4), Vector3.new(0.9, 0, 1.4) } do
+		part(m, "TrolleyPost", Vector3.new(0.1, 2.3, 0.1), CFrame.new(6 + o.X, 1.35, -22 + o.Z), steel)
+	end
+	for k = 0, 1 do
+		part(m, "Tray", Vector3.new(1.4, 0.08, 2), CFrame.new(6, 2.52 + k * 0.09, -22), { Color = rgb(180, 180, 175), Material = M.Metal })
+	end
+	-- Floor drain, mop and bucket, the menu.
+	part(m, "Drain", Vector3.new(1.2, 0.04, 1.2), CFrame.new(-2, 0.02, -15), { Color = rgb(30, 32, 34), Material = M.DiamondPlate, CanCollide = false })
+	part(m, "Bucket", Vector3.new(1, 1.1, 1.1), CFrame.new(4, 0.5, -5) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(200, 170, 40), Material = M.Plastic })
+	part(m, "Mop", Vector3.new(0.1, 5, 0.1), CFrame.new(4.3, 2.8, -5.3) * CFrame.Angles(0.15, 0, -0.2), { Color = rgb(140, 110, 70), Material = M.Wood })
+	wallSign(m, w, -1, -27, 9.4, Vector2.new(5, 1.2), "ALL CREW MEALS ARE MANDATORY")
+	B.panelGrid(m, w, L, h, 2, 3, p.light, 0.7)
 	return m
 end
 
