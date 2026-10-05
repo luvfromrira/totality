@@ -586,11 +586,29 @@ local function laboratory(): Model
 		part(m, "HoodBody", Vector3.new(2.6, 4.2, 0.3), CFrame.new(x, 5.1, z - 2.35), { Color = rgb(190, 192, 195) })
 		part(m, "HoodBody", Vector3.new(2.6, 4.2, 0.3), CFrame.new(x, 5.1, z + 2.35), { Color = rgb(190, 192, 195) })
 		part(m, "HoodTop", Vector3.new(2.6, 1, 5), CFrame.new(x, 7.7, z), { Color = rgb(190, 192, 195) })
-		part(m, "HoodSash", Vector3.new(0.08, 3.4, 4.4), CFrame.new(x + 1.26, 5.1, z),
-			{ Color = rgb(190, 215, 225), Material = M.Glass, Transparency = 0.6, CastShadow = false })
-		B.panel(m, x - 0.2, 7.2, z, rgb(220, 235, 245), 0.4, 6, Vector3.new(1.4, 0.15, 3.6))
-		part(m, "Flask", Vector3.new(0.9, 0.7, 0.7), CFrame.new(x - 0.2, 3.45, z) * CFrame.Angles(0, 0, math.pi / 2),
-			{ Shape = Enum.PartType.Cylinder, Color = rgb(255, 150, 60), Material = M.Glass, Transparency = 0.25 })
+		-- Sash raised most of the way, so you can see what was left running inside.
+		part(m, "HoodSash", Vector3.new(0.08, 1.4, 4.4), CFrame.new(x + 1.26, 6.5, z),
+			{ Color = rgb(200, 225, 235), Material = M.Glass, Transparency = 0.8, CastShadow = false })
+		part(m, "SashHandle", Vector3.new(0.15, 0.12, 3.6), CFrame.new(x + 1.35, 5.8, z), steel)
+		B.panel(m, x - 0.2, 7.2, z, rgb(220, 235, 245), 0.5, 7, Vector3.new(1.4, 0.15, 3.6))
+		-- Ring stand holding a round flask that still glows.
+		part(m, "StandBase", Vector3.new(1, 0.1, 0.8), CFrame.new(x - 0.3, 3.05, z - 1), steel)
+		part(m, "StandRod", Vector3.new(0.08, 2.4, 0.08), CFrame.new(x - 0.7, 4.2, z - 1), steel)
+		part(m, "StandClamp", Vector3.new(0.6, 0.08, 0.08), CFrame.new(x - 0.4, 4.4, z - 1), steel)
+		local flask = part(m, "Flask", Vector3.new(0.9, 0.9, 0.9), CFrame.new(x - 0.1, 3.95, z - 1),
+			{ Shape = Enum.PartType.Ball, Color = rgb(255, 140, 50), Material = M.Neon, Transparency = 0.15 }) :: Part
+		part(m, "FlaskNeck", Vector3.new(0.6, 0.25, 0.25), CFrame.new(x - 0.1, 4.6, z - 1) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(210, 225, 230), Material = M.Glass, Transparency = 0.4 })
+		glowing(flask, rgb(255, 150, 70), 6, 0.6)
+		part(m, "Burner", Vector3.new(0.4, 0.3, 0.3), CFrame.new(x - 0.1, 3.2, z - 1) * CFrame.Angles(0, 0, math.pi / 2), { Shape = Enum.PartType.Cylinder, Color = rgb(60, 62, 66), Material = M.Metal })
+		-- Test tube rack and a beaker.
+		part(m, "TubeRack", Vector3.new(0.6, 0.4, 1.8), CFrame.new(x - 0.2, 3.2, z + 1), { Color = rgb(225, 225, 220) })
+		for k = -2, 2 do
+			part(m, "TestTube", Vector3.new(0.8, 0.18, 0.18), CFrame.new(x - 0.2, 3.65, z + 1 + k * 0.32) * CFrame.Angles(0, 0, math.pi / 2),
+				{ Shape = Enum.PartType.Cylinder, Color = if k % 2 == 0 then rgb(120, 200, 120) else rgb(90, 160, 220), Material = M.Glass, Transparency = 0.3 })
+		end
+		part(m, "Beaker", Vector3.new(0.7, 0.6, 0.6), CFrame.new(x + 0.5, 3.35, z + 0.1) * CFrame.Angles(0, 0, math.pi / 2),
+			{ Shape = Enum.PartType.Cylinder, Color = rgb(230, 220, 200), Material = M.Glass, Transparency = 0.35 })
 	end
 	-- Spectrum chart with one line that shouldn't be there.
 	local chart = B.onWall(m, w, 1, -18, 6.5, Vector2.new(10, 4.2), 0.1, "Whiteboard", { Color = rgb(230, 232, 234) }) :: Part
