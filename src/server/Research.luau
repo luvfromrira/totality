@@ -93,8 +93,22 @@ local function cloneCustom(template: Model, cframe: CFrame): Model
 	cframe *= CFrame.Angles(math.pi, 0, 0) * flat
 	model:PivotTo(cframe)
 	-- Lift it so the bottom of its bounding box sits on the surface.
-	local box, size = model:GetBoundingBox()
-	local lift = cframe.Position.Y - (box.Position.Y - size.Y / 2)
+	-- (Measured from every part's corners in world space, since the model's own
+	-- bounding box is aligned to its pivot, which may no longer be upright.)
+	local bottom = math.huge
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			local h = d.Size / 2
+			for _, sx in { -1, 1 } do
+				for _, sy in { -1, 1 } do
+					for _, sz in { -1, 1 } do
+						bottom = math.min(bottom, d.CFrame:PointToWorldSpace(Vector3.new(sx * h.X, sy * h.Y, sz * h.Z)).Y)
+					end
+				end
+			end
+		end
+	end
+	local lift = cframe.Position.Y - bottom
 	model:PivotTo(cframe + Vector3.new(0, lift, 0))
 	if not model.PrimaryPart then
 		model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart", true)
