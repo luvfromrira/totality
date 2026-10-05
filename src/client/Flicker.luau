@@ -1,4 +1,5 @@
--- Makes lamps marked with the "Flicker" attribute stutter every few seconds.
+-- Makes lamps marked with the "Flicker" attribute stutter every few seconds,
+-- and makes status LEDs (parts named "Led") blink.
 -- Runs on the client so it's smooth and costs the server nothing.
 local Flicker = {}
 
@@ -25,9 +26,30 @@ local function flickerLoop(lamp: BasePart)
 	end
 end
 
+-- Server-rack status LEDs: each one blinks off now and then on its own rhythm.
+local function blinkLoop(led: BasePart)
+	local on = led.Color
+	local off = on:Lerp(Color3.new(0, 0, 0), 0.85)
+	local rand = Random.new()
+	while led.Parent do
+		task.wait(rand:NextNumber(0.4, 3))
+		if not led.Parent then
+			return
+		end
+		led.Color = off
+		task.wait(rand:NextNumber(0.05, 0.4))
+		led.Color = on
+	end
+end
+
 local function watch(instance: Instance)
-	if instance:IsA("BasePart") and instance.Name == "Lamp" and instance:GetAttribute("Flicker") then
+	if not instance:IsA("BasePart") then
+		return
+	end
+	if instance.Name == "Lamp" and instance:GetAttribute("Flicker") then
 		task.spawn(flickerLoop, instance)
+	elseif instance.Name == "Led" then
+		task.spawn(blinkLoop, instance)
 	end
 end
 
