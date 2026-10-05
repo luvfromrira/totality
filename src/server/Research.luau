@@ -89,7 +89,8 @@ local function cloneCustom(template: Model, cframe: CFrame): Model
 	elseif raw.Z < raw.Y and raw.Z < raw.X then
 		flat = CFrame.Angles(math.rad(90), 0, 0)
 	end
-	cframe *= flat
+	-- Flipped 180 degrees so the cover faces up.
+	cframe *= CFrame.Angles(math.pi, 0, 0) * flat
 	model:PivotTo(cframe)
 	-- Lift it so the bottom of its bounding box sits on the surface.
 	local box, size = model:GetBoundingBox()
