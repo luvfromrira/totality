@@ -1380,6 +1380,7 @@ local MEMORIAL_NAMES = {
 	"M", "CYNTHIA", "LILLIE", "MONICA STEVENS", "D3RLORD3", "TOWA BIRD",
 	"RENEE RAPP", "TATE", "UMBREON", "CORSOLA", "DEWGONG", "SPHEAL",
 	'"DAVE"', "HEROBRINE?", "APHELION", "ROOMBA", "NEKO TIFA", "AVERITT", "AEL <3",
+	"PIZZA", "ERIN", "ETHAN", "SANE", "FLIP",
 }
 
 local function candle(m: Model, x: number, y: number, z: number, lit: boolean, height: number)
