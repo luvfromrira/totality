@@ -19,34 +19,75 @@ local EDGE_MARGIN = 2 -- keep away from walls
 
 ReplicatedStorage:SetAttribute("ResearchCollected", 0)
 
-local function createItem(cframe: CFrame): BasePart
-	local item = Instance.new("Part")
-	item.Name = "Research"
-	item.Size = Vector3.new(1.2, 0.2, 1.6)
-	item.CFrame = cframe
-	item.Anchored = true
-	item.CanCollide = false
-	item.Material = Enum.Material.Neon
-	item.Color = Color3.fromRGB(170, 200, 255)
+local MANILA = Color3.fromRGB(196, 168, 112)
+local PAPER = Color3.fromRGB(232, 228, 214)
 
+local function piece(model: Model, name: string, size: Vector3, cframe: CFrame, color: Color3): Part
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cframe
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CastShadow = false
+	p.Material = Enum.Material.SmoothPlastic
+	p.Color = color
+	p.Parent = model
+	return p
+end
+
+-- A manila research folder with papers poking out, lying on the surface at `cframe`.
+local function createItem(cframe: CFrame, rng: Random): Model
+	local model = Instance.new("Model")
+	model.Name = "Research"
+
+	local back = piece(model, "Cover", Vector3.new(1.6, 0.03, 2.1), cframe * CFrame.new(0, 0.015, 0), MANILA)
+	piece(model, "Tab", Vector3.new(0.6, 0.03, 0.18), cframe * CFrame.new(-0.35, 0.015, -1.13), MANILA)
+	-- Loose sheets, each slightly skewed so they stick out past the cover.
+	for i = 1, 4 do
+		local skew = CFrame.Angles(0, math.rad(rng:NextNumber(-7, 7)), 0)
+		local shift = CFrame.new(rng:NextNumber(-0.12, 0.12), 0.03 + i * 0.012, rng:NextNumber(-0.15, 0.1))
+		local sheet = piece(model, "Paper", Vector3.new(1.45, 0.01, 1.95), cframe * shift * skew, PAPER)
+		-- A few dark lines of "text" on the top sheet.
+		if i == 4 then
+			for line = 0, 5 do
+				local w = if line == 0 then 0.7 else rng:NextNumber(0.8, 1.15)
+				piece(model, "Text", Vector3.new(w, 0.004, 0.05),
+					sheet.CFrame * CFrame.new(-0.55 + w / 2, 0.007, -0.7 + line * 0.2), Color3.fromRGB(60, 60, 66))
+			end
+		end
+	end
+	-- Front cover lies open a little, hinged at the left edge.
+	local hinge = cframe * CFrame.new(-0.8, 0.1, 0) * CFrame.Angles(0, math.rad(rng:NextNumber(-6, 6)), math.rad(rng:NextNumber(3, 9)))
+	local front = piece(model, "Cover", Vector3.new(1.6, 0.03, 2.1), hinge * CFrame.new(0.8, 0, 0), MANILA)
+	-- Solstice Solutions stamp and a classification strip on the cover.
+	piece(model, "Stamp", Vector3.new(0.4, 0.004, 0.4), front.CFrame * CFrame.new(0.35, 0.017, -0.5), Color3.fromRGB(220, 120, 40))
+	piece(model, "Strip", Vector3.new(1.6, 0.004, 0.16), front.CFrame * CFrame.new(0, 0.017, 0.75), Color3.fromRGB(150, 30, 30))
+	model.PrimaryPart = back
+
+	-- Faint glow so it can still be spotted in dark rooms.
 	local glow = Instance.new("PointLight")
-	glow.Color = item.Color
-	glow.Range = 6
-	glow.Brightness = 0.8
-	glow.Parent = item
+	glow.Color = Color3.fromRGB(255, 225, 170)
+	glow.Range = 5
+	glow.Brightness = 0.5
+	glow.Parent = back
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Collect"
 	prompt.ObjectText = "Research"
 	prompt.HoldDuration = 0 -- instant grab
 	prompt.RequiresLineOfSight = false
-	prompt.Parent = item
+	prompt.Parent = back
 	prompt.Triggered:Connect(function()
-		item:Destroy()
+		if not model.Parent then
+			return
+		end
+		model:Destroy()
 		local count = ReplicatedStorage:GetAttribute("ResearchCollected") + 1
 		ReplicatedStorage:SetAttribute("ResearchCollected", count)
 	end)
-	return item
+	return model
 end
 
 -- Finds the surface below `origin` inside the room and checks there's room for an item.
@@ -62,7 +103,7 @@ local function trySpot(room: Model, origin: Vector3, rayParams: RaycastParams, o
 			return nil
 		end
 	end
-	return CFrame.new(hit.Position + Vector3.new(0, 0.1, 0))
+	return CFrame.new(hit.Position)
 end
 
 function Research.PopulateRoom(room: Model, rng: Random)
@@ -123,7 +164,7 @@ function Research.PopulateRoom(room: Model, rng: Random)
 			end
 			if not tooClose then
 				local angle = rng:NextNumber(0, math.pi * 2)
-				createItem(spot * CFrame.Angles(0, angle, 0)).Parent = room
+				createItem(spot * CFrame.Angles(0, angle, 0), rng).Parent = room
 				table.insert(placed, spot)
 			end
 		end
