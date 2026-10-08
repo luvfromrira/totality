@@ -24,6 +24,17 @@ local OUTFIT = {
 	127809511173598,
 }
 
+-- Body parts set directly (0 = default). Applied after the outfit and bundles, so these win.
+local BODY_PARTS = {
+	Torso = 86499666,
+	LeftArm = 86499716,
+	RightArm = 86499698,
+	LeftLeg = 0,
+	RightLeg = 0,
+}
+
+local SKIN_COLOR = Color3.fromRGB(206, 171, 236)
+
 local BUNDLES = {
 	3209000400683, -- animation pack
 	100303331884709, -- head: Purple Cute Demon Following Glowing Eyes
@@ -96,6 +107,12 @@ function CrewNPC.GetDescription(): HumanoidDescription
 		else
 			warn(`[Totality] CrewNPC: couldn't load bundle {bundleId}: {details}`)
 		end
+	end
+	for part, id in BODY_PARTS do
+		(desc :: any)[part] = id
+	end
+	for _, prop in { "HeadColor", "TorsoColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor" } do
+		(desc :: any)[prop] = SKIN_COLOR
 	end
 	if #layered > 0 then
 		desc:SetAccessories(layered, true)
