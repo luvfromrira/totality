@@ -187,8 +187,13 @@ local function animate(peri: Model, file: Model?)
 		end
 		if file and fileRest then
 			if holding and chest then
-				-- Held out in front of his chest, tilted up toward his face.
-				file:PivotTo(chest.CFrame * CFrame.new(-0.15, 0.05, -1.25) * CFrame.Angles(math.rad(55), 0, 0))
+				-- Held out in front of his chest: same flat orientation it had on
+				-- the cabinet, turned to face him and tipped up toward his face.
+				local look = chest.CFrame.LookVector * Vector3.new(1, 0, 1)
+				local facing = CFrame.lookAt(Vector3.zero, if look.Magnitude > 0.01 then look.Unit else Vector3.zAxis)
+				local spot = chest.CFrame * CFrame.new(-0.15, -0.2, -1.2)
+				local flat = facing:Inverse() * fileRest.Rotation
+				file:PivotTo(CFrame.new(spot.Position) * facing * CFrame.Angles(math.rad(40), 0, 0) * flat)
 			else
 				file:PivotTo(fileRest)
 			end
