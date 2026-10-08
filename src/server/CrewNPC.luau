@@ -37,7 +37,7 @@ local SKIN_COLOR = Color3.fromRGB(206, 171, 236)
 
 local BUNDLES = {
 	3209000400683, -- animation pack
-	100303331884709, -- head: Purple Cute Demon Following Glowing Eyes
+	37662765657058, -- head
 }
 
 -- Marketplace AssetTypeId -> HumanoidDescription property.
