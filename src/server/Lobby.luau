@@ -1190,6 +1190,13 @@ local function runPod(pod: Pod)
 end
 
 -- Builds the lobby, starts the pods and returns where players spawn.
+-- Generates the Martian terrain around the lobby. Can be run from the Studio
+-- command bar so the terrain is saved into the place:
+--   require(game.ServerScriptService.Server.Lobby).GenerateTerrain()
+function Lobby.GenerateTerrain()
+	landscape()
+end
+
 -- If a folder named Lobby is already in the Workspace (a copy saved into the
 -- place), that one is used as-is and nothing is built; only the terrain is
 -- generated, and only when there isn't terrain at the lobby already.
