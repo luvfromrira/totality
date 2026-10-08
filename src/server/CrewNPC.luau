@@ -26,7 +26,7 @@ local OUTFIT = {
 
 local BUNDLES = {
 	3209000400683, -- animation pack
-	37662765657058, -- not a plain item (404 as an asset), most likely a head bundle
+	100303331884709, -- head: Purple Cute Demon Following Glowing Eyes
 }
 
 -- Marketplace AssetTypeId -> HumanoidDescription property.
