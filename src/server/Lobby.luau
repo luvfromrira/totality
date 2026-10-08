@@ -11,14 +11,15 @@
 	  Floor 1 (y 0)
 	    raised platform (y 2), x 0..30, z 0..38.6
 	      locker room / EVA suit-up    x 0..30,  z 0..23
-	      reception island             x 4..28,  z 24..36
+	      hallway (players spawn here) x 0..30,  z 23..38.6
 	      steps down to the lobby      x 30..34, z 24..36
-	    launch pods A, B, C            along the back wall, z 1.4..15.4
+	    launch pods A, B, C            in an annex behind the back wall, z -14..0,
+	                                   doorways flush with the wall
 	    stairs to floor 2              x 80..97, z 11..22 (two flights)
 	    open atrium with the orrery, lounge seating along the windows
 	  Floor 2 (y 14)
 	    Peri's office                  x 0..29, z 0..38.6, window over the atrium
-	    stair landing                  x 76..98, z 0..17
+	    stair landing                  x 68..98, z 0..20
 	    see-through grate walkway      around the atrium, along the windows
 
 	Everything is anchored parts plus Terrain for the Martian landscape.
@@ -160,7 +161,7 @@ end
 
 -- Building outline (both floors) and the open atrium above the lobby.
 local OUTLINE = { v(0, 0), v(82, 0), v(98, 11), v(98, 34), v(79, 50), v(36, 50), v(28, 38.6), v(0, 38.6) }
-local VOID = { v(29, 0), v(76, 0), v(76, 17), v(85, 17), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
+local VOID = { v(29, 0), v(68, 0), v(68, 20), v(80, 20), v(80, 17), v(85, 17), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
 
 local H1, H2 = 14, 26 -- floor 2 level, roof underside
 local PLAT = 2 -- raised platform height
@@ -232,10 +233,11 @@ local function buildShell()
 		end
 	end
 	-- North (back) wall: clerestory windows high over the atrium.
-	solid("Wall", 0, 0, 82, 0, { { 32, 74, 17.5, 24 } })
+	-- The pods sit in an annex behind it, their doorways flush with the wall.
+	solid("Wall", 0, 0, 82, 0, { { 32, 74, 17.5, 24 }, { 30.6, 77, 0, 12.6 } })
 	-- West wall: EVA airlock from the locker room, office window.
 	solid("Wall", 0, 38.6, 0, 0, { { 24.6, 29.6, PLAT, PLAT + 8 }, { 8, 30, 16, 23 } })
-	-- South-west wall behind the reception: window band on both floors.
+	-- South-west wall along the hallway: window band on both floors.
 	solid("Wall", 28, 38.6, 0, 38.6, { { 3, 25, 5, 11 }, { 4, 24, 16, 23 } })
 
 	-- Glass fill and frames for those openings.
@@ -292,7 +294,7 @@ local function buildShell()
 	end
 end
 
--- Raised platform: locker room, reception, steps ---------------------------------
+-- Raised platform: locker room, hallway, steps ---------------------------------
 local function buildPlatform()
 	box("Platform", 0, 0.1, 0, 30, PLAT, 38.6, { Color = Color3.fromRGB(196, 190, 182), Material = Enum.Material.Marble })
 	-- Steps down into the lobby, with glowing nosings.
@@ -400,52 +402,36 @@ local function lockerRoom()
 	end
 end
 
-local function reception()
-	local y = PLAT
-	local counter = { Color = WHITE, Material = SMOOTH }
-	local topProps = { Color = Color3.fromRGB(40, 42, 48), Material = Enum.Material.Granite }
-	-- U-shaped counter open to the west.
-	box("Counter", 24, y, 25, 26, y + 3.4, 35, counter)
-	box("Counter", 12, y, 25, 24, y + 3.4, 26.6, counter)
-	box("Counter", 12, y, 33.4, 24, y + 3.4, 35, counter)
-	box("CounterTop", 23.8, y + 3.4, 24.8, 26.4, y + 3.6, 35.2, topProps)
-	box("CounterTop", 11.8, y + 3.4, 24.8, 23.8, y + 3.6, 26.8, topProps)
-	box("CounterTop", 11.8, y + 3.4, 33.2, 23.8, y + 3.6, 35.2, topProps)
-	-- Orange light strip along the front and the company name.
-	local strip = box("CounterStrip", 26, y + 0.3, 25.2, 26.05, y + 0.5, 34.8, { Color = ORANGE, Material = NEON, CanCollide = false })
-	glow(strip, ORANGE, 6, 0.4)
-	local name = box("CounterSign", 26, y + 1.4, 26, 26.05, y + 2.8, 34, { Color = WHITE })
-	sign(name, "SOLSTICE SOLUTIONS", Enum.NormalId.Right, DARK)
-	-- Terminals and chairs.
-	for _, z in { 27.5, 32.5 } do
-		box("Monitor", 24.4, y + 3.8, z - 1.2, 24.6, y + 5.2, z + 1.2, { Color = DARK })
-		local scr = box("Screen", 24.35, y + 3.9, z - 1.1, 24.4, y + 5.1, z + 1.1, { Color = Color3.fromRGB(90, 160, 220), Material = NEON })
-		_ = scr
-		box("MonitorStand", 24.5, y + 3.6, z - 0.2, 24.7, y + 3.8, z + 0.2, { Color = DARK })
-		box("ChairSeat", 21, y + 1.6, z - 0.9, 22.8, y + 2, z + 0.9, { Color = FABRIC })
-		box("ChairBack", 20.6, y + 2, z - 0.9, 21, y + 4, z + 0.9, { Color = FABRIC })
-		box("ChairPost", 21.8, y, z - 0.15, 22.1, y + 1.6, z + 0.15, { Color = STEEL, Material = METAL })
+-- Annex behind the back wall that the pods sit in, with filler panels and a
+-- header so the wall reads as one flat face with three pod doorways in it.
+local function podAnnex()
+	local wallProps = { Color = WHITE, Material = SMOOTH }
+	for _, f in { { 30.6, 32 }, { 45, 47.5 }, { 60.5, 63 }, { 76, 77 } } do
+		box("Wall", f[1], 0, -1, f[2], 11, 0, wallProps)
 	end
-	-- Freestanding logo wall behind the desk.
-	box("LogoWall", 5, y, 26, 6, y + 9, 34, { Color = DARK, Material = SMOOTH })
-	local sun = cyl("SunEmblem", 6, y + 5.5, 30, 1.8, 0.2, { Color = ORANGE, Material = NEON }, nil)
-	if sun then
-		sun.CFrame = cf(6.1, y + 5.5, 30) * CFrame.Angles(0, 0, 0)
-		glow(sun, ORANGE, 10, 0.6)
-	end
-	for i = 0, 7 do
-		local a = i * math.pi / 4
-		local p = B.part(folder, "SunRay", Vector3.new(0.12, 0.35, 1.4),
-			cf(6.08, y + 5.5 + math.sin(a) * 2.8, 30 + math.cos(a) * 2.8) * CFrame.Angles(-a, 0, 0),
-			{ Color = AMBER, Material = NEON })
-		_ = p
-	end
-	local lw = box("LogoText", 6, y + 1.2, 26.5, 6.05, y + 2.6, 33.5, { Color = DARK })
-	sign(lw, "MARS OPERATIONS · ARES BASIN", Enum.NormalId.Right, AMBER)
-	-- Plants at the counter ends.
-	for _, z in { 23.6, 36.6 } do
-		cyl("Planter", 27.5, y, z, 0.9, 1.6, { Color = DARK, Material = SMOOTH })
-		ball("Plant", 27.5, y + 2.6, z, 2, { Color = Color3.fromRGB(150, 50, 45), Material = Enum.Material.Grass })
+	box("Wall", 30.6, 11, -1, 77, 12.6, 0, wallProps)
+	box("Trim", 30.6, 12.4, 0, 77, 12.6, 0.2, { Color = ORANGE, Material = NEON, CanCollide = false })
+	box("Foundation", 29, -2, -17, 79, 0, -3, { Color = Color3.fromRGB(150, 112, 92), Material = Enum.Material.Concrete })
+	box("Floor", 30, 0, -16, 78, 0.1, -1, { Color = DARK, Material = METAL })
+	box("Wall", 30, 0, -16, 78, 13.6, -15, wallProps)
+	box("Wall", 29, 0, -16, 30, 13.6, -1, wallProps)
+	box("Wall", 77, 0, -15, 78, 13.6, -1, wallProps)
+	box("Roof", 29, 12.6, -16, 78, 13.6, -1, { Color = Color3.fromRGB(190, 186, 180), Material = Enum.Material.Concrete })
+end
+
+-- Railing up a straight flight of stairs running along x, at depth z.
+local function stairRail(xa: number, ya: number, xb: number, yb: number, z: number)
+	local len = math.sqrt((xb - xa) ^ 2 + (yb - ya) ^ 2)
+	local angle = math.atan2(yb - ya, xb - xa)
+	local mid = cf((xa + xb) / 2, (ya + yb) / 2, z) * CFrame.Angles(0, 0, angle)
+	B.part(folder, "Rail", Vector3.new(len + 0.3, 0.25, 0.3), mid * CFrame.new(0, 3.5, 0), { Color = STEEL, Material = METAL })
+	B.part(folder, "RailGlass", Vector3.new(len, 3.1, 0.1), mid * CFrame.new(0, 1.8, 0),
+		{ Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.65 })
+	local n = math.max(1, math.round(math.abs(xb - xa) / 3.5))
+	for i = 0, n do
+		local t = i / n
+		local x, y = xa + (xb - xa) * t, ya + (yb - ya) * t
+		box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.6, z + 0.12, { Color = STEEL, Material = METAL })
 	end
 end
 
@@ -457,7 +443,7 @@ local pods: { Pod } = {}
 local function buildPod(name: string, x0: number)
 	local x1 = x0 + 13
 	local cx = (x0 + x1) / 2
-	local z0, z1 = 1.4, 15.4
+	local z0, z1 = -14, 0
 	local hull = { Color = Color3.fromRGB(205, 208, 214), Material = METAL }
 	local trimDark = { Color = DARK, Material = METAL }
 	local model = Instance.new("Model")
@@ -472,7 +458,7 @@ local function buildPod(name: string, x0: number)
 	pb("Hull", x0, 0.5, z0, x0 + 0.6, 11, z1, hull)
 	pb("Hull", x1 - 0.6, 0.5, z0, x1, 11, z1, hull)
 	pb("Hull", x0 + 0.6, 0.5, z0, x1 - 0.6, 11, z0 + 0.6, hull)
-	pb("Roof", x0 - 0.2, 11, z0 - 0.2, x1 + 0.2, 11.8, z1 + 0.4, trimDark)
+	pb("Roof", x0 - 0.2, 11, z0 - 0.2, x1 + 0.2, 11.8, z1 - 0.6, trimDark)
 	-- Ribs and roof gear.
 	for _, z in { z0 + 3.5, z0 + 7, z0 + 10.5 } do
 		pb("Rib", x0 - 0.15, 0.5, z - 0.3, x0, 11, z + 0.3, trimDark)
@@ -542,7 +528,7 @@ local function buildPod(name: string, x0: number)
 	sign(plate, `POD {name}`, Enum.NormalId.Back, ORANGE)
 	local crew = pb("CrewSign", x1 - 3.6, 6, z1, x1 - 1, 8.2, z1 + 0.1, { Color = DARK })
 	sign(crew, "1–4\nCREW", Enum.NormalId.Back, WHITE)
-	local lamp = pb("StatusLamp", cx - 0.6, 11.8, z1 - 0.2, cx + 0.6, 12.4, z1 + 0.3, { Color = Color3.fromRGB(80, 255, 120), Material = NEON, CanCollide = false }) :: Part
+	local lamp = pb("StatusLamp", cx - 0.6, 11.4, z1, cx + 0.6, 12, z1 + 0.3, { Color = Color3.fromRGB(80, 255, 120), Material = NEON, CanCollide = false }) :: Part
 	glow(lamp, Color3.fromRGB(80, 255, 120), 8, 0.5)
 	-- Guide lights on the lobby floor leading to the door.
 	for i = 1, 4 do
@@ -633,20 +619,15 @@ local function buildStairs()
 			cf(86, 10.3, z + 0.15) * CFrame.Angles(0, 0, math.atan2(-7, 12)), { Color = DARK, Material = METAL })
 		_ = s
 	end
-	-- Railings: outer side of flight 1, divider between flights, landing edge.
-	local p1 = B.part(folder, "Rail", Vector3.new(14, 0.25, 0.3), cf(86, 7.1, 22.1) * CFrame.Angles(0, 0, math.atan2(7, 12)), { Color = STEEL, Material = METAL })
-	_ = p1
-	for i = 0, 3 do
-		local x = 80.5 + i * 3.8
-		local top = (x - 80) / run * 0.5
-		box("RailPost", x - 0.12, top, 21.9, x + 0.12, top + 3.6, 22.2, { Color = STEEL, Material = METAL })
-	end
-	local p2 = B.part(folder, "Rail", Vector3.new(14, 0.25, 0.3), cf(86, 7.1, 16.9) * CFrame.Angles(0, 0, math.atan2(7, 12)), { Color = STEEL, Material = METAL })
-	_ = p2
-	for i = 0, 3 do
-		local x = 80.5 + i * 3.8
-		local top = (x - 80) / run * 0.5
-		box("RailPost", x - 0.12, top, 16.8, x + 0.12, top + 3.6, 17.1, { Color = STEEL, Material = METAL })
+	-- Railings on both sides of both flights, around the mid landing, and on
+	-- the steps up to the raised platform.
+	stairRail(80, 0, 92, 7, 21.85)
+	stairRail(80, 0, 92, 7, 17.15)
+	stairRail(92, 7, 80, 14, 11.15)
+	stairRail(92, 7, 80, 14, 15.85)
+	railing(92, 11, 97.4, 11, 7)
+	for _, z in { 24.2, 35.8 } do
+		stairRail(30, PLAT, 34, 0, z)
 	end
 	railing(97.4, 22, 92, 22, 7)
 end
@@ -661,7 +642,7 @@ local function buildFloor2()
 	slabBox(0, 0, 29, 38.6)
 	box("Beam", 29, H1 - 1, 0, 29.6, H1, 30, { Color = DARK, Material = METAL })
 	-- Stair landing (with the hole over flight 2) and its corner along the diagonal glass.
-	slabBox(76, 0, 80, 17)
+	slabBox(68, 0, 80, 20)
 	slabBox(80, 0, 82, 11)
 	slabBox(82, 3, 86, 11)
 	slabBox(86, 6, 90, 11)
@@ -681,7 +662,7 @@ local function buildFloor2()
 		if x < 29 and z < 38.6 then
 			return false -- office
 		end
-		if x >= 76 and z < 17 then
+		if (x >= 68 and x < 80 and z < 20) or (x >= 80 and z < 17) then
 			return false -- landing
 		end
 		return true
@@ -723,7 +704,7 @@ local function buildFloor2()
 		local lit = seg("BeamLight", e[1], e[2], e[3], e[4], H1 - 1.5, H1 - 1.4, 0.3, -0.3, { Color = COOL, Material = NEON, CanCollide = false })
 		glow(lit, COOL, 12, 0.5, "SurfaceLight")
 	end
-	for _, p in { v(39, 39.4), v(57.5, 39.4), v(76, 39.4), v(85, 31), v(85, 23.5), v(29, 30) } do
+	for _, p in { v(39, 39.4), v(57.5, 39.4), v(76, 39.4), v(85, 31), v(85, 23.5), v(29, 30), v(68.5, 19.5) } do
 		box("Column", p.X - 0.45, 0.1, p.Y - 0.45, p.X + 0.45, H1 - 1.4, p.Y + 0.45, { Color = DARK, Material = METAL })
 	end
 
@@ -732,8 +713,9 @@ local function buildFloor2()
 	railing(39, 39.4, 76, 39.4, H1)
 	railing(76, 39.4, 85, 31, H1)
 	railing(85, 31, 85, 17, H1)
-	railing(76, 17, 80, 17, H1)
-	railing(76, 0.7, 76, 17, H1)
+	railing(68, 0.7, 68, 20, H1)
+	railing(68, 20, 80, 20, H1)
+	railing(80, 20, 80, 17, H1)
 	railing(80, 11, 92, 11, H1)
 	railing(92, 11, 92, 17, H1)
 	railing(85, 17, 92, 17, H1)
@@ -912,8 +894,8 @@ local function atrium()
 	end
 
 	-- Departure board on the back wall above the pods.
-	box("Board", 34, 16, 0, 74, 17.2, 0.4, { Color = DARK })
-	local board = box("BoardScreen", 34.5, 12.4, 0, 73.5, 16, 0.35, { Color = Color3.fromRGB(14, 18, 24) })
+	box("Board", 33.5, 16.4, 0, 66, 17.4, 0.4, { Color = DARK })
+	local board = box("BoardScreen", 34, 13, 0, 65.5, 16.4, 0.35, { Color = Color3.fromRGB(14, 18, 24) })
 	sign(board, "EXPEDITION DEPARTURES  ·  S.S. TOTALITY RESEARCH RECOVERY  ·  BOARD A POD TO BEGIN", Enum.NormalId.Back, AMBER, Enum.Font.Code)
 	_ = board
 
@@ -947,16 +929,6 @@ local function atrium()
 		ball("Plant", p[1], 3.6, p[2], 2.8, { Color = Color3.fromRGB(150, 55, 45), Material = Enum.Material.Grass })
 	end
 
-	-- Info kiosks.
-	for _, k in { { 36, 28, 0.6 }, { 76, 30, -0.6 } } do
-		local base = cf(k[1], 0, k[2]) * CFrame.Angles(0, k[3], 0)
-		B.part(folder, "Kiosk", Vector3.new(1.6, 4, 1.2), base * CFrame.new(0, 2.1, 0), { Color = WHITE, Material = SMOOTH })
-		local scr = B.part(folder, "KioskScreen", Vector3.new(1.4, 1.8, 0.1), base * CFrame.new(0, 3.3, 0.62) * CFrame.Angles(math.rad(-15), 0, 0),
-			{ Color = Color3.fromRGB(20, 30, 40) }) :: Part
-		sign(scr, "WELCOME TO\nARES BASIN\n\nLocal time 16:40\nDust: LOW\nSurface: −63°C", Enum.NormalId.Back, Color3.fromRGB(140, 220, 255), Enum.Font.Code)
-		B.part(folder, "KioskStripe", Vector3.new(1.62, 0.2, 1.22), base * CFrame.new(0, 0.6, 0), { Color = ORANGE, Material = NEON })
-	end
-
 	-- Coffee cart under the east walkway.
 	box("Cart", 80, 0.1, 40, 85, 3.4, 42.4, { Color = WHITE, Material = SMOOTH })
 	box("CartTop", 79.8, 3.4, 39.8, 85.2, 3.6, 42.6, { Color = Color3.fromRGB(40, 42, 48), Material = Enum.Material.Granite })
@@ -967,7 +939,7 @@ local function atrium()
 	sign(cs, "RED DUST ROAST", Enum.NormalId.Front, AMBER)
 
 	-- Pendant lights hanging into the atrium.
-	for _, p in { { 38, 8 }, { 48, 5 }, { 66, 5 }, { 74, 9 }, { 40, 33 }, { 74, 34 }, { 47, 38 }, { 67, 38 } } do
+	for _, p in { { 38, 8 }, { 48, 5 }, { 64, 5 }, { 40, 33 }, { 74, 34 }, { 47, 38 }, { 67, 38 } } do
 		box("PendantCable", p[1] - 0.04, 18, p[2] - 0.04, p[1] + 0.04, H2, p[2] + 0.04, { Color = DARK, CanCollide = false })
 		cyl("PendantShade", p[1], 17, p[2], 1.2, 1, { Color = DARK, Material = METAL, CanCollide = false })
 		local bulb = ball("Lamp", p[1], 16.9, p[2], 0.9, { Color = WARM, Material = NEON, CanCollide = false })
@@ -978,6 +950,7 @@ local function atrium()
 		panel(p[1], H1 - 0.35, p[2], WARM, Vector3.new(4, 0.3, 1.6), 16)
 	end
 	panel(79, H1 - 1, 6, WARM, Vector3.new(4, 0.3, 1.6), 16)
+	panel(72, H1 - 1, 12, WARM, Vector3.new(4, 0.3, 1.6), 16)
 	-- Floor 2 walkway lights on the ceiling.
 	for _, p in { { 34, 44 }, { 50, 46 }, { 66, 46 }, { 82, 42 }, { 92, 24 }, { 88, 8 } } do
 		panel(p[1], H2, p[2], COOL, Vector3.new(4, 0.3, 1.6), 16)
@@ -1040,7 +1013,7 @@ local function landscape()
 
 	-- Keep the building and its surroundings clear of terrain (nothing may
 	-- poke up through the floor or walls).
-	terrain:FillBlock(CFrame.new(pos(49, 40, 25)), Vector3.new(124, 80, 80), Enum.Material.Air)
+	terrain:FillBlock(CFrame.new(pos(49, 40, 25)), Vector3.new(124, 80, 96), Enum.Material.Air)
 
 end
 
@@ -1209,9 +1182,9 @@ function Lobby.Build(): CFrame
 		folder = Instance.new("Folder")
 		folder.Name = "Lobby"
 		buildShell()
+		podAnnex()
 		buildPlatform()
 		lockerRoom()
-		reception()
 		buildPod("A", 32)
 		buildPod("B", 47.5)
 		buildPod("C", 63)
@@ -1249,7 +1222,8 @@ function Lobby.Build(): CFrame
 	end
 	print("[Totality] Lobby built. Step into a pod to launch. Set Config.LOBBY = false to skip the lobby.")
 	-- On the lobby floor in front of the pods, facing the windows.
-	return cf(57, 3, 34) * CFrame.Angles(0, math.pi, 0)
+	-- In the hallway by the locker rooms, facing the steps down into the lobby.
+	return CFrame.lookAt(pos(12, PLAT + 3, 30), pos(20, PLAT + 3, 30))
 end
 
 return Lobby
