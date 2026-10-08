@@ -8,12 +8,14 @@ local Ambience = require(script.Ambience)
 local Footsteps = require(script.Footsteps)
 local Sprint = require(script.Sprint)
 local PromptOutline = require(script.PromptOutline)
+local Spin = require(script.Spin)
 
 task.spawn(Flicker.Start)
 task.spawn(Ambience.Start)
 task.spawn(Footsteps.Start)
 task.spawn(Sprint.Start)
 task.spawn(PromptOutline.Start)
+task.spawn(Spin.Start)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"
@@ -38,5 +40,12 @@ end
 ReplicatedStorage:GetAttributeChangedSignal("CurrentRoom"):Connect(refresh)
 ReplicatedStorage:GetAttributeChangedSignal("ResearchCollected"):Connect(refresh)
 refresh()
+
+-- No room counter while waiting in the lobby.
+local function lobbyChanged()
+	label.Visible = Players.LocalPlayer:GetAttribute("InLobby") ~= true
+end
+Players.LocalPlayer:GetAttributeChangedSignal("InLobby"):Connect(lobbyChanged)
+lobbyChanged()
 
 gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")

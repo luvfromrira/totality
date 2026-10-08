@@ -59,12 +59,17 @@ local function watch(instance: Instance)
 	end
 end
 
-function Flicker.Start()
-	local rooms = workspace:WaitForChild("GeneratedRooms")
-	for _, d in rooms:GetDescendants() do
+local function watchFolder(name: string)
+	local root = workspace:WaitForChild(name)
+	for _, d in root:GetDescendants() do
 		watch(d)
 	end
-	rooms.DescendantAdded:Connect(watch)
+	root.DescendantAdded:Connect(watch)
+end
+
+function Flicker.Start()
+	task.spawn(watchFolder, "Lobby")
+	watchFolder("GeneratedRooms")
 end
 
 return Flicker

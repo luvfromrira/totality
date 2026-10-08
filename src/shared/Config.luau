@@ -5,8 +5,13 @@ Config.TOTAL_ROOMS = 100
 
 -- true = don't start a run; lay out every room side by side to look at.
 Config.SHOWCASE = false
--- Puts the cutscene crew NPC in room 1 so you can see how it looks.
-Config.PREVIEW_NPC = true
+-- true = players start in the Mars lobby and board a launch pod to begin.
+-- false = skip the lobby and start the run straight away.
+Config.LOBBY = true
+-- Where the lobby is built: far from the ship so neither can see the other.
+Config.LOBBY_CFRAME = CFrame.new(0, -500, 6000)
+-- Puts the cutscene characters (Aphe, Peri) in room 1 so you can see how they look.
+Config.PREVIEW_NPC = false
 
 -- Set to a number to replay the same run every time (e.g. 194006090).
 -- Leave as nil for a new random run each time.

@@ -5,7 +5,9 @@ local LightingSetup = require(script.LightingSetup)
 local RoomGenerator = require(script.RoomGenerator)
 local Showcase = require(script.Showcase)
 local CrewNPC = require(script.CrewNPC)
-local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
+local Lobby = require(script.Lobby)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage.Shared.Config)
 
 LightingSetup.Apply()
 
@@ -14,40 +16,77 @@ local baseplate = workspace:FindFirstChild("Baseplate")
 if baseplate then
 	baseplate:Destroy()
 end
-local showcaseSpawn: CFrame? = nil
-if Config.SHOWCASE then
-	showcaseSpawn = Showcase.Build()
-else
-	RoomGenerator.Start(Config.SEED)
-	-- Characters already placed in the Workspace by hand are skipped.
-	if Config.PREVIEW_NPC then
-		-- They stand side by side a few studs in front of where players spawn, facing them.
-		task.spawn(function()
-			local room1 = workspace:WaitForChild("GeneratedRooms"):WaitForChild("Room1", 10)
-			local spawnPoint = room1 and room1:FindFirstChild("PlayerSpawn", true)
-			if spawnPoint then
-				local params = RaycastParams.new()
-				params.FilterType = Enum.RaycastFilterType.Include
-				params.FilterDescendantsInstances = { room1 }
-				for i, name in CrewNPC.Names do
-					if not workspace:FindFirstChild(name) then
-						local side = (i - (#CrewNPC.Names + 1) / 2) * 3.5
-						local at = spawnPoint.CFrame * CFrame.new(side, 0, -8)
-						local hit = workspace:Raycast(at.Position, Vector3.new(0, -10, 0), params)
-						local ground = if hit then hit.Position else at.Position - Vector3.new(0, 3, 0)
-						local facing = ground - spawnPoint.CFrame.LookVector
-						local ok, err = pcall(CrewNPC.Spawn, name, CFrame.lookAt(ground, facing), room1)
-						if not ok then
-							warn(`[Totality] Couldn't spawn preview {name}: {err}`)
-						end
-					end
+-- Stands the cutscene characters side by side a few studs in front of where
+-- players spawn in room 1, facing them. Ones placed in the Workspace by hand are skipped.
+local function previewCharacters()
+	task.spawn(function()
+		local room1 = workspace:WaitForChild("GeneratedRooms"):WaitForChild("Room1", 10)
+		local spawnPoint = room1 and room1:FindFirstChild("PlayerSpawn", true)
+		if not spawnPoint then
+			return
+		end
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Include
+		params.FilterDescendantsInstances = { room1 }
+		for i, name in CrewNPC.Names do
+			if not workspace:FindFirstChild(name) then
+				local side = (i - (#CrewNPC.Names + 1) / 2) * 3.5
+				local at = spawnPoint.CFrame * CFrame.new(side, 0, -8)
+				local hit = workspace:Raycast(at.Position, Vector3.new(0, -10, 0), params)
+				local ground = if hit then hit.Position else at.Position - Vector3.new(0, 3, 0)
+				local facing = ground - spawnPoint.CFrame.LookVector
+				local ok, err = pcall(CrewNPC.Spawn, name, CFrame.lookAt(ground, facing), room1)
+				if not ok then
+					warn(`[Totality] Couldn't spawn preview {name}: {err}`)
 				end
 			end
-		end)
+		end
+	end)
+end
+
+-- Starts the 100-room run (once per server).
+local function startRun()
+	if ReplicatedStorage:GetAttribute("RunStarted") then
+		return
+	end
+	ReplicatedStorage:SetAttribute("RunStarted", true)
+	RoomGenerator.Start(Config.SEED)
+	if Config.PREVIEW_NPC then
+		previewCharacters()
 	end
 end
 
--- Spawn players inside the Start room instead of on the baseplate.
+local function room1Spawn(): CFrame?
+	local rooms = workspace:WaitForChild("GeneratedRooms")
+	local room1 = rooms:WaitForChild("Room1", 10)
+	local spawnPoint = room1 and room1:FindFirstChild("PlayerSpawn", true)
+	return spawnPoint and spawnPoint.CFrame
+end
+
+local showcaseSpawn: CFrame? = nil
+local lobbySpawn: CFrame? = nil
+if Config.SHOWCASE then
+	showcaseSpawn = Showcase.Build()
+elseif Config.LOBBY then
+	lobbySpawn = Lobby.Build()
+	-- A pod launched: start the run and send its crew up to room 1.
+	Lobby.OnLaunch = function(crew: { Player })
+		startRun()
+		local target = room1Spawn()
+		for _, player in crew do
+			player:SetAttribute("InLobby", false)
+			local character = player.Character
+			if target and character then
+				character:PivotTo(target)
+			end
+		end
+		return true
+	end
+else
+	startRun()
+end
+
+-- Spawn players in the lobby, or inside the Start room once their pod has launched.
 -- No spawn forcefield: remove it as soon as it appears.
 for _, d in workspace:GetDescendants() do
 	if d:IsA("SpawnLocation") then
@@ -70,17 +109,24 @@ local function onCharacter(character: Model)
 		character:PivotTo(showcaseSpawn)
 		return
 	end
-	local rooms = workspace:WaitForChild("GeneratedRooms")
-	local room1 = rooms:WaitForChild("Room1", 10)
-	local spawnPoint = room1 and room1:FindFirstChild("PlayerSpawn", true)
-	if spawnPoint then
+	local player = Players:GetPlayerFromCharacter(character)
+	if lobbySpawn and player and player:GetAttribute("InLobby") ~= false then
 		character:WaitForChild("HumanoidRootPart")
-		character:PivotTo(spawnPoint.CFrame)
+		character:PivotTo(lobbySpawn)
+		return
+	end
+	local target = room1Spawn()
+	if target then
+		character:WaitForChild("HumanoidRootPart")
+		character:PivotTo(target)
 	end
 end
 
 local function onPlayer(player: Player)
 	player.CameraMode = Enum.CameraMode.LockFirstPerson
+	if lobbySpawn then
+		player:SetAttribute("InLobby", true)
+	end
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then
 		onCharacter(player.Character)

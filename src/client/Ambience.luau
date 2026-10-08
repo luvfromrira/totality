@@ -41,6 +41,31 @@ local function makeAtmosphere(): Atmosphere
 	return atmosphere
 end
 
+-- Mars: low afternoon sun through butterscotch dust.
+local MARS_LIGHTING = {
+	ClockTime = 16.4,
+	GeographicLatitude = 25,
+	Brightness = 2.6,
+	Ambient = Color3.fromRGB(88, 62, 52),
+	OutdoorAmbient = Color3.fromRGB(150, 104, 82),
+	ColorShift_Top = Color3.fromRGB(255, 205, 165),
+	EnvironmentDiffuseScale = 0.5,
+	EnvironmentSpecularScale = 0.5,
+	ExposureCompensation = 0,
+}
+
+local function makeMarsAtmosphere(): Atmosphere
+	local atmosphere = Instance.new("Atmosphere")
+	atmosphere.Name = "MarsHaze"
+	atmosphere.Color = Color3.fromRGB(206, 146, 106)
+	atmosphere.Decay = Color3.fromRGB(128, 72, 46)
+	atmosphere.Glare = 0.3
+	atmosphere.Haze = 1.8
+	atmosphere.Offset = 0.12
+	atmosphere.Density = 0.34
+	return atmosphere
+end
+
 local function makeBlur(): DepthOfFieldEffect
 	local dof = Instance.new("DepthOfFieldEffect")
 	dof.Name = "TotalityBlur"
@@ -199,6 +224,49 @@ function Ambience.Start()
 	end
 	ReplicatedStorage:GetAttributeChangedSignal("CurrentRoom"):Connect(update)
 	update()
+
+	-- In the Mars lobby: warm dusty daylight instead of the ship's gloom.
+	local player = Players.LocalPlayer
+	local mars = makeMarsAtmosphere()
+	local saved = {}
+	local function setLobby(inLobby: boolean)
+		if inLobby then
+			for prop, value in MARS_LIGHTING do
+				if saved[prop] == nil then
+					saved[prop] = (Lighting :: any)[prop]
+				end
+				(Lighting :: any)[prop] = value
+			end
+			atmosphere.Parent = nil
+			mars.Parent = Lighting
+			blur.Enabled = false
+			dust.Color = ColorSequence.new(Color3.fromRGB(200, 130, 95))
+			for _, f in vignette do
+				f.Visible = false
+			end
+		else
+			for prop, value in saved do
+				(Lighting :: any)[prop] = value
+			end
+			table.clear(saved)
+			mars.Parent = nil
+			atmosphere.Parent = Lighting
+			blur.Enabled = true
+			dust.Color = ColorSequence.new(Color3.fromRGB(170, 165, 155))
+			for _, f in vignette do
+				f.Visible = true
+			end
+		end
+		local color = Lighting:FindFirstChild("TotalityColor") :: ColorCorrectionEffect?
+		if color then
+			color.TintColor = if inLobby then Color3.fromRGB(255, 236, 222) else Color3.fromRGB(230, 235, 255)
+			color.Saturation = if inLobby then 0.05 else -0.2
+		end
+	end
+	player:GetAttributeChangedSignal("InLobby"):Connect(function()
+		setLobby(player:GetAttribute("InLobby") == true)
+	end)
+	setLobby(player:GetAttribute("InLobby") == true)
 end
 
 return Ambience
