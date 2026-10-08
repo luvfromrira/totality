@@ -22,6 +22,9 @@
 	    see-through grate walkway      around the atrium, along the windows
 
 	Everything is anchored parts plus Terrain for the Martian landscape.
+	To edit the lobby by hand: play, copy Workspace.Lobby, stop, paste it into
+	the Workspace and save. From then on that saved copy is used instead of
+	building a new one (the terrain is still generated each time).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -548,15 +551,49 @@ local function buildPod(name: string, x0: number)
 		pb("Guide", cx + 3.1, 0.1, z, cx + 3.4, 0.14, z + 0.6, { Color = AMBER, Material = NEON, CanCollide = false })
 	end
 
-	table.insert(pods, {
-		name = name,
-		screen = screen,
-		lamp = lamp,
-		zone = cf(cx, 4, (z0 + z1) / 2 - 0.4),
-		zoneSize = Vector3.new(11.6, 8, 12.6),
-		doors = doors,
-		spawn = cf(cx, 3, z1 + 4),
-	})
+	model:SetAttribute("PodName", name)
+	model:SetAttribute("ZoneCFrame", cf(cx, 4, (z0 + z1) / 2 - 0.4))
+	model:SetAttribute("ZoneSize", Vector3.new(11.6, 8, 12.6))
+	for _, d in doors do
+		d.part:SetAttribute("OpenCFrame", d.open)
+		d.part:SetAttribute("ShutCFrame", d.shut)
+	end
+	_ = screen
+	_ = lamp
+end
+
+-- Reads the pods back out of the lobby folder (freshly built or saved in the place).
+local function findPods()
+	for _, model in folder:GetDescendants() do
+		if model:IsA("Model") and model:GetAttribute("PodName") then
+			local screenPart = model:FindFirstChild("StatusScreen")
+			local gui = screenPart and screenPart:FindFirstChildOfClass("SurfaceGui")
+			local screen = gui and gui:FindFirstChildOfClass("TextLabel")
+			local lamp = model:FindFirstChild("StatusLamp")
+			if not (screen and lamp) then
+				warn(`[Totality] Pod {model.Name} is missing its StatusScreen or StatusLamp; it won't launch`)
+				continue
+			end
+			local doors = {}
+			for _, d in model:GetChildren() do
+				if d:IsA("BasePart") and d:GetAttribute("OpenCFrame") then
+					table.insert(doors, { part = d, open = d:GetAttribute("OpenCFrame"), shut = d:GetAttribute("ShutCFrame") })
+				end
+			end
+			table.insert(pods, {
+				name = model:GetAttribute("PodName"),
+				screen = screen,
+				lamp = lamp,
+				zone = model:GetAttribute("ZoneCFrame"),
+				zoneSize = model:GetAttribute("ZoneSize"),
+				doors = doors,
+				spawn = CFrame.identity,
+			})
+		end
+	end
+	table.sort(pods, function(a, b)
+		return a.name < b.name
+	end)
 end
 
 -- Stairs, landing, walkway, balustrades ---------------------------------------------
@@ -973,8 +1010,8 @@ local function landscape()
 	end
 	-- Ground patches for colour variation.
 	for _ = 1, 30 do
-		local p = around(70, 500)
-		terrain:FillBlock(CFrame.new(p - Vector3.new(0, 1.5, 0)) * CFrame.Angles(0, rng:NextNumber(0, 6), 0),
+		local p = around(130, 500)
+		terrain:FillBlock(CFrame.new(p - Vector3.new(0, 2.5, 0)) * CFrame.Angles(0, rng:NextNumber(0, 6), 0),
 			Vector3.new(rng:NextNumber(30, 80), 4, rng:NextNumber(30, 80)), Enum.Material.Ground)
 	end
 	-- Distant mesas and buttes.
@@ -1001,7 +1038,14 @@ local function landscape()
 	end
 	terrain:FillBlock(CFrame.new(crater - Vector3.new(0, 30, 0)), Vector3.new(150, 8, 150), Enum.Material.Sand)
 
-	-- Base structures outside: solar array, comms mast, rover, cargo, a dome.
+	-- Keep the building and its surroundings clear of terrain (nothing may
+	-- poke up through the floor or walls).
+	terrain:FillBlock(CFrame.new(pos(49, 40, 25)), Vector3.new(124, 80, 80), Enum.Material.Air)
+
+end
+
+-- Base structures outside: solar array, comms mast, rover, cargo, a dome.
+local function outsideStructures()
 	local outside = Instance.new("Folder")
 	outside.Name = "Outside"
 	outside.Parent = folder
@@ -1146,27 +1190,46 @@ local function runPod(pod: Pod)
 end
 
 -- Builds the lobby, starts the pods and returns where players spawn.
+-- If a folder named Lobby is already in the Workspace (a copy saved into the
+-- place), that one is used as-is and nothing is built; only the terrain is
+-- generated, and only when there isn't terrain at the lobby already.
 function Lobby.Build(): CFrame
-	folder = Instance.new("Folder")
-	folder.Name = "Lobby"
+	local saved = workspace:FindFirstChild("Lobby")
+	if saved and saved:IsA("Folder") then
+		folder = saved
+		print("[Totality] Using the Lobby saved in the Workspace.")
+	else
+		folder = Instance.new("Folder")
+		folder.Name = "Lobby"
+		buildShell()
+		buildPlatform()
+		lockerRoom()
+		reception()
+		buildPod("A", 32)
+		buildPod("B", 47.5)
+		buildPod("C", 63)
+		buildStairs()
+		buildFloor2()
+		office()
+		atrium()
+		outsideStructures()
+	end
 
-	buildShell()
-	buildPlatform()
-	lockerRoom()
-	reception()
-	buildPod("A", 32)
-	buildPod("B", 47.5)
-	buildPod("C", 63)
-	buildStairs()
-	buildFloor2()
-	office()
-	atrium()
-	landscape()
+	local probe = pos(49, -6, 25)
+	local region = Region3.new(probe - Vector3.new(2, 2, 2), probe + Vector3.new(2, 2, 2)):ExpandToGrid(4)
+	local materials = workspace.Terrain:ReadVoxels(region, 4)
+	if materials[1][1][1] == Enum.Material.Air then
+		landscape()
+	end
 
 	folder.Parent = workspace
+	findPods()
 
 	-- Peri at his office window, looking out over the lobby.
 	task.spawn(function()
+		if folder:FindFirstChild("Peri", true) then
+			return
+		end
 		local at = pos(27.6, H1, 24)
 		local ok, err = pcall(CrewNPC.Spawn, "Peri", CFrame.lookAt(at, at + Vector3.new(1, 0, 0)), folder)
 		if not ok then
