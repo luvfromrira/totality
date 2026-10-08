@@ -952,11 +952,11 @@ local function office()
 
 	-- Low credenza under the atrium window behind the chair, with a Mars globe,
 	-- an award and a plant.
-	box("Credenza", 27.4, y, 9, 28.9, y + 2.4, 23, walnutDark)
-	box("CredenzaTop", 27.3, y + 2.4, 8.9, 29, y + 2.6, 23.1, walnut)
-	for z = 9.4, 22, 3.4 do
-		box("CredenzaDoor", 27.32, y + 0.3, z, 27.4, y + 2.2, z + 3.1, walnut)
-		box("DrawerPull", 27.22, y + 1.2, z + 1.4, 27.32, y + 1.5, z + 1.7, brass)
+	box("Credenza", 27.4, y, 9, 28.9, y + 2.4, 25, walnutDark)
+	box("CredenzaTop", 27.3, y + 2.4, 8.9, 29, y + 2.6, 25.1, walnut)
+	for z = 9.4, 21.8, 3.1 do
+		box("CredenzaDoor", 27.32, y + 0.3, z, 27.4, y + 2.2, z + 2.9, walnut)
+		box("DrawerPull", 27.22, y + 1.2, z + 1.3, 27.32, y + 1.5, z + 1.6, brass)
 	end
 	cyl("GlobeStand", 28.15, y + 2.6, 11, 0.35, 0.2, brass)
 	box("GlobeAxis", 28.1, y + 2.8, 10.95, 28.2, y + 3.2, 11.05, brass)
@@ -965,11 +965,6 @@ local function office()
 	box("AwardBase", 27.85, y + 2.6, 15.5, 28.45, y + 2.8, 16.3, walnutDark)
 	cyl("Pot", 28.15, y + 2.6, 19, 0.45, 0.6, { Color = WHITE })
 	ball("Succulent", 28.15, y + 3.4, 19, 0.9, { Color = Color3.fromRGB(80, 140, 90), Material = Enum.Material.Grass })
-	-- A research file on the credenza by the window. Peri picks it up and
-	-- reads it now and then (client/PeriIdle.luau animates that).
-	local file = Research.Prop(cf(28.1, y + 2.62, 22.1) * CFrame.Angles(0, math.rad(80), 0), Random.new(9))
-	file.Name = "PeriFile"
-	file.Parent = folder
 
 	-- Built-in bookshelf along the north wall: books, boxes, a few keepsakes.
 	box("ShelfSide", 3, y, 0.2, 3.3, y + 8.6, 2, walnutDark)
@@ -1510,17 +1505,25 @@ function Lobby.Build(): CFrame
 	folder.Parent = workspace
 	findPods()
 
+	-- The research file Peri picks up, at the window end of the credenza
+	-- beside him (added here so a saved Lobby gets one too).
+	if not folder:FindFirstChild("PeriFile", true) then
+		local top = folder:FindFirstChild("CredenzaTop", true) :: BasePart?
+		local at = if top then top.CFrame * CFrame.new(0, top.Size.Y / 2, top.Size.Z / 2 - 0.9) else cf(28.1, H1 + 2.6, 24.2)
+		local file = Research.Prop(CFrame.new(at.Position) * CFrame.Angles(0, math.rad(80), 0), Random.new(9))
+		file.Name = "PeriFile"
+		file.Parent = folder
+	end
+
 	-- Peri at his office window, looking out over the lobby.
 	-- A Peri already standing in a saved Lobby is swapped for a freshly built
-	-- one (see CrewNPC), in the same spot.
+	-- one (see CrewNPC). He stands by the window, a couple of studs clear of
+	-- the desk, next to the credenza with his research file.
 	task.spawn(function()
-		local at = pos(27.6, H1, 24)
+		local at = pos(27.6, H1, 26.6)
 		local spot = CFrame.lookAt(at, at + O.RightVector)
 		local existing = folder:FindFirstChild("Peri", true)
-		if existing and existing:IsA("Model") then
-			local box, size = existing:GetBoundingBox()
-			local feet = box.Position - Vector3.new(0, size.Y / 2, 0)
-			spot = CFrame.new(feet) * existing:GetPivot().Rotation
+		if existing then
 			existing:Destroy()
 		end
 		local ok, err = pcall(CrewNPC.Spawn, "Peri", spot, folder)
