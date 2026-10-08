@@ -177,7 +177,8 @@ function CrewNPC.Spawn(name: string, cframe: CFrame, parent: Instance?): Model
 	-- A saved copy can lose its joints while being edited (they'd be replaced
 	-- by welds, or deleted). Rebuild them from the body's rig attachments so
 	-- the character can still be animated.
-	if not npc:FindFirstChildWhichIsA("Motor6D", true) then
+	-- (Newer Roblox rigs use AnimationConstraints for joints instead of Motor6Ds.)
+	if not npc:FindFirstChildWhichIsA("Motor6D", true) and not npc:FindFirstChildWhichIsA("AnimationConstraint", true) then
 		for _, d in npc:GetDescendants() do
 			-- Only welds between two body parts; ones holding accessories stay.
 			if d:IsA("Weld") or d:IsA("WeldConstraint") then

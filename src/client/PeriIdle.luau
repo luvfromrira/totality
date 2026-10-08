@@ -103,9 +103,14 @@ local function sample(t: number): ((string) -> Vector3, boolean)
 end
 
 local function animate(peri: Model, file: Model?)
-	local joints: { [string]: Motor6D } = {}
+	-- Joints are Motor6Ds on older rigs and AnimationConstraints on newer ones;
+	-- both are driven through their Transform.
+	local joints: { [string]: any } = {}
 	local function adopt(d: Instance)
 		if d:IsA("Motor6D") then
+			joints[d.Name] = d
+		elseif d:IsA("AnimationConstraint") then
+			d.IsKinematic = true -- follow Transform exactly instead of physics
 			joints[d.Name] = d
 		elseif d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" then
 			-- Joints can't move anchored parts; only the root holds him in place.
@@ -128,7 +133,7 @@ local function animate(peri: Model, file: Model?)
 	end
 	if next(joints) == nil then
 		if peri.Parent then
-			warn("[Totality] Peri has no Motor6D joints, so he can't be animated")
+			warn("[Totality] Peri has no joints (Motor6D or AnimationConstraint), so he can't be animated")
 		end
 		return -- (or this was an old copy the server swapped out)
 	end
