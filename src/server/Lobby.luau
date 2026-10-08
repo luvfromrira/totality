@@ -19,7 +19,7 @@
 	    open atrium with the orrery, lounge seating along the windows
 	  Floor 2 (y 14)
 	    Peri's office                  x 0..29, z 0..38.6, window over the atrium
-	    stair landing                  x 68..98, z 0..24
+	    stair landing                  x 85..98, z 0..6, walkway beside the stairs
 	    see-through grate walkway      around the atrium, along the windows
 
 	Everything is anchored parts plus Terrain for the Martian landscape.
@@ -174,7 +174,7 @@ end
 
 -- Building outline (both floors) and the open atrium above the lobby.
 local OUTLINE = { v(0, 0), v(98, 0), v(98, 34), v(79, 50), v(36, 50), v(28, 38.6), v(0, 38.6) }
-local VOID = { v(29, 0), v(68, 0), v(68, 24), v(85, 24), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
+local VOID = { v(29, 0), v(85, 0), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
 
 local H1, H2 = 14, 34 -- floor 2 level, roof underside
 local PLAT = 2 -- raised platform height
@@ -663,7 +663,7 @@ end
 
 -- One straight flight flush against the east windows, climbing north from
 -- the lobby floor (z 30) to the landing (z 6). Solid underneath.
-local STAIR_X0, STAIR_X1 = 92.3, 97.3
+local STAIR_X0, STAIR_X1 = 92.5, 97.3
 local STAIR_TOP, STAIR_BOTTOM = 6, 30
 local function buildStairs()
 	local stepProps = { Color = Color3.fromRGB(80, 84, 92), Material = Enum.Material.DiamondPlate }
@@ -689,8 +689,7 @@ local function buildFloor2()
 	slabBox(0, 0, 29, 38.6)
 	box("Beam", 29, H1 - 1, 0, 29.6, H1, 30, { Color = DARK, Material = METAL })
 	-- Stair landing, open along the windows where the stairs come up.
-	slabBox(68, 0, STAIR_X0, 24)
-	slabBox(STAIR_X0, 0, 98, STAIR_TOP)
+	slabBox(85, 0, 98, STAIR_TOP)
 	_ = under
 
 	-- Grate walkway: every 1-stud row of the walkway area gets an invisible
@@ -702,7 +701,7 @@ local function buildFloor2()
 		if x < 29 and z < 38.6 then
 			return false -- office
 		end
-		if (x >= 68 and z < 24) or (x >= STAIR_X0 and z < STAIR_BOTTOM + 0.5) then
+		if (x >= 85 and z < STAIR_TOP) or (x >= STAIR_X0 and z < STAIR_BOTTOM + 0.5) then
 			return false -- landing
 		end
 		return true
@@ -737,14 +736,14 @@ local function buildFloor2()
 	end
 	-- Edge beams under the walkway, along the atrium edge, on columns.
 	local edges = {
-		{ 29, 30, 39, 39.4 }, { 39, 39.4, 76, 39.4 }, { 76, 39.4, 85, 31 }, { 85, 31, 85, 24 }, { 85, 24, 68, 24 },
+		{ 29, 30, 39, 39.4 }, { 39, 39.4, 76, 39.4 }, { 76, 39.4, 85, 31 }, { 85, 31, 85, 0.7 },
 	}
 	for _, e in edges do
 		seg("Beam", e[1], e[2], e[3], e[4], H1 - 1.4, H1 - 0.35, 0.6, -0.3, { Color = DARK, Material = METAL })
 		local lit = seg("BeamLight", e[1], e[2], e[3], e[4], H1 - 1.5, H1 - 1.4, 0.3, -0.3, { Color = COOL, Material = NEON, CanCollide = false })
 		glow(lit, COOL, 12, 0.5, "SurfaceLight")
 	end
-	for _, p in { v(39, 39.4), v(57.5, 39.4), v(76, 39.4), v(85, 31), v(84.5, 24.5), v(68.5, 23.5) } do
+	for _, p in { v(39, 39.4), v(57.5, 39.4), v(76, 39.4), v(85, 31), v(85, 16) } do
 		box("Column", p.X - 0.45, 0.1, p.Y - 0.45, p.X + 0.45, H1 - 1.4, p.Y + 0.45, { Color = DARK, Material = METAL })
 	end
 
@@ -752,9 +751,7 @@ local function buildFloor2()
 	railing(29.6, 30.6, 39, 39.4, H1)
 	railing(39, 39.4, 76, 39.4, H1)
 	railing(76, 39.4, 85, 31, H1)
-	railing(85, 31, 85, 24, H1)
-	railing(68, 0.7, 68, 24, H1)
-	railing(68, 24, 85, 24, H1)
+	railing(85, 31, 85, 0.7, H1)
 	-- Around the stair opening along the windows.
 	railing(STAIR_X0 - 0.15, STAIR_TOP, STAIR_X0 - 0.15, STAIR_BOTTOM + 0.5, H1)
 	railing(STAIR_X0 - 0.15, STAIR_BOTTOM + 0.5, 97.6, STAIR_BOTTOM + 0.5, H1)
@@ -1239,19 +1236,20 @@ local function atrium()
 
 	-- Pendant lights hanging into the atrium.
 	for _, p in { { 38, 8 }, { 48, 5 }, { 64, 5 }, { 36, 34 }, { 74, 34 }, { 47, 38 }, { 78, 36 } } do
-		box("PendantCable", p[1] - 0.04, 18, p[2] - 0.04, p[1] + 0.04, H2, p[2] + 0.04, { Color = DARK, CanCollide = false })
-		cyl("PendantShade", p[1], 17, p[2], 1.2, 1, { Color = DARK, Material = METAL, CanCollide = false })
-		local bulb = ball("Lamp", p[1], 16.9, p[2], 0.9, { Color = WARM, Material = NEON, CanCollide = false })
-		glow(bulb, WARM, 22, 0.7)
+		-- Hung well above the walkway railings: cable, cap, a deep shade with a
+		-- glowing diffuser across its open bottom.
+		box("PendantCable", p[1] - 0.04, 23.6, p[2] - 0.04, p[1] + 0.04, H2, p[2] + 0.04, { Color = DARK, CanCollide = false })
+		cyl("PendantCap", p[1], 23.2, p[2], 0.3, 0.4, { Color = DARK, Material = METAL, CanCollide = false })
+		cyl("PendantShade", p[1], 22.3, p[2], 0.75, 0.9, { Color = DARK, Material = METAL, CanCollide = false })
+		cyl("PendantShade", p[1], 21.6, p[2], 1.15, 0.7, { Color = DARK, Material = METAL, CanCollide = false })
+		local diffuser = cyl("Lamp", p[1], 21.55, p[2], 1.05, 0.05, { Color = WARM, Material = NEON, CanCollide = false })
+		glow(diffuser, WARM, 26, 0.8)
 	end
 	-- Lights under the walkways and landing.
-	for _, p in { { 45, 45 }, { 58, 45 }, { 71, 45 }, { 92, 26 }, { 92, 38 }, { 88, 33 } } do
+	for _, p in { { 45, 45 }, { 58, 45 }, { 71, 45 }, { 88.7, 26 }, { 89, 38 }, { 88.7, 33 }, { 88.7, 12 }, { 88.7, 19 } } do
 		panel(p[1], H1 - 0.35, p[2], WARM, Vector3.new(4, 0.3, 1.6), 16)
 	end
-	panel(79, H1 - 1, 6, WARM, Vector3.new(4, 0.3, 1.6), 16)
-	panel(72, H1 - 1, 12, WARM, Vector3.new(4, 0.3, 1.6), 16)
-	panel(74, H1 - 1, 21, WARM, Vector3.new(4, 0.3, 1.6), 16)
-	panel(88, H1 - 1, 22, WARM, Vector3.new(4, 0.3, 1.6), 16)
+	panel(90, H1 - 1, 3, WARM, Vector3.new(4, 0.3, 1.6), 16)
 	-- Floor 2 walkway lights on the ceiling.
 	for _, p in { { 34, 44 }, { 50, 46 }, { 66, 46 }, { 82, 42 }, { 92, 24 }, { 88, 8 } } do
 		panel(p[1], H2, p[2], COOL, Vector3.new(4, 0.3, 1.6), 28)
