@@ -373,27 +373,58 @@ local function lockerRoom()
 		end
 	end
 
-	-- EVA suits on stands along the east wall.
+	-- EVA suits hanging on racks along the east wall, a little taller than a
+	-- player (bulky suit plus helmet). They face into the room (-x).
+	local white = { Color = Color3.fromRGB(236, 234, 228), Material = Enum.Material.Fabric }
+	local joint = { Color = Color3.fromRGB(150, 150, 150), Material = METAL }
+	local dark = { Color = Color3.fromRGB(40, 42, 46), Material = SMOOTH }
 	for i, z in { 4, 9.5, 15 } do
 		local x = 28
-		box("SuitStand", x - 0.15, y, z - 0.15, x + 0.15, y + 7.6, z + 0.15, { Color = STEEL, Material = METAL })
-		box("SuitBase", x - 1, y, z - 1, x + 1, y + 0.2, z + 1, { Color = DARK, Material = METAL })
-		local white = { Color = Color3.fromRGB(236, 234, 228), Material = Enum.Material.Fabric }
-		box("SuitTorso", x - 0.7, y + 4.2, z - 1.1, x + 0.5, y + 6.6, z + 1.1, white)
-		box("SuitPack", x + 0.5, y + 4.4, z - 0.9, x + 1.3, y + 6.8, z + 0.9, { Color = Color3.fromRGB(200, 198, 192) })
-		box("SuitLeg", x - 0.5, y + 0.4, z - 0.85, x + 0.3, y + 4.2, z - 0.15, white)
-		box("SuitLeg", x - 0.5, y + 0.4, z + 0.15, x + 0.3, y + 4.2, z + 0.85, white)
-		box("SuitBoot", x - 0.8, y + 0.2, z - 0.9, x + 0.35, y + 0.9, z - 0.1, { Color = DARK })
-		box("SuitBoot", x - 0.8, y + 0.2, z + 0.1, x + 0.35, y + 0.9, z + 0.9, { Color = DARK })
-		box("SuitArm", x - 0.5, y + 3.3, z - 1.6, x + 0.2, y + 6.4, z - 1.1, white)
-		box("SuitArm", x - 0.5, y + 3.3, z + 1.1, x + 0.2, y + 6.4, z + 1.6, white)
-		box("SuitBand", x - 0.72, y + 5.4, z - 1.12, x + 0.52, y + 5.7, z + 1.12, { Color = ORANGE })
-		ball("SuitHelmet", x - 0.1, y + 7.4, z, 1.6, white)
-		ball("Visor", x - 0.45, y + 7.4, z, 1.2, { Color = Color3.fromRGB(230, 150, 40), Material = Enum.Material.Glass, Reflectance = 0.4 })
-		local tag = box("SuitTag", x - 0.72, y + 6, z - 0.6, x - 0.7, y + 6.4, z + 0.6, { Color = DARK })
+		-- Rack: base plate, post behind the suit, shoulder hanger.
+		box("RackBase", x - 0.9, y, z - 1.2, x + 1.5, y + 0.15, z + 1.2, { Color = DARK, Material = METAL })
+		box("RackPost", x + 1.1, y + 0.15, z - 0.12, x + 1.35, y + 6.2, z + 0.12, { Color = STEEL, Material = METAL })
+		box("RackArm", x + 0.6, y + 4.55, z - 0.1, x + 1.1, y + 4.75, z + 0.1, { Color = STEEL, Material = METAL })
+		-- Boots and legs with knee rings.
+		for _, side in { -1, 1 } do
+			local lz = z + side * 0.42
+			box("SuitBoot", x - 0.55, y + 0.15, lz - 0.32, x + 0.35, y + 0.6, lz + 0.32, dark)
+			box("SuitLeg", x - 0.3, y + 0.6, lz - 0.3, x + 0.3, y + 1.4, lz + 0.3, white)
+			box("SuitKnee", x - 0.33, y + 1.4, lz - 0.33, x + 0.33, y + 1.55, lz + 0.33, joint)
+			box("SuitLeg", x - 0.3, y + 1.55, lz - 0.3, x + 0.3, y + 2.4, lz + 0.3, white)
+		end
+		-- Waist, torso, chest controls, orange band, name tag.
+		box("SuitBelt", x - 0.38, y + 2.4, z - 0.78, x + 0.38, y + 2.6, z + 0.78, joint)
+		box("SuitTorso", x - 0.45, y + 2.6, z - 0.8, x + 0.45, y + 4.3, z + 0.8, white)
+		box("SuitBand", x - 0.47, y + 3.05, z - 0.81, x + 0.47, y + 3.2, z + 0.81, { Color = ORANGE })
+		box("ChestBox", x - 0.7, y + 3.3, z - 0.4, x - 0.45, y + 3.85, z + 0.4, { Color = Color3.fromRGB(200, 200, 196) })
+		box("ChestLight", x - 0.72, y + 3.7, z - 0.3, x - 0.7, y + 3.78, z - 0.15, { Color = Color3.fromRGB(80, 255, 120), Material = NEON })
+		box("ChestLight", x - 0.72, y + 3.7, z - 0.05, x - 0.7, y + 3.78, z + 0.1, { Color = ORANGE, Material = NEON })
+		local tag = box("SuitTag", x - 0.47, y + 3.95, z + 0.2, x - 0.45, y + 4.2, z + 0.75, { Color = DARK })
 		sign(tag, `EVA-0{i}`, Enum.NormalId.Left, WHITE)
+		-- Life-support pack with hoses running to the chest box.
+		box("SuitPack", x + 0.45, y + 2.8, z - 0.65, x + 1.05, y + 4.5, z + 0.65, { Color = Color3.fromRGB(205, 203, 196) })
+		box("PackVent", x + 1.05, y + 3.2, z - 0.4, x + 1.08, y + 3.6, z + 0.4, dark)
+		for _, side in { -1, 1 } do
+			box("Hose", x - 0.62, y + 3.85, z + side * 0.3 - 0.05, x + 0.5, y + 3.95, z + side * 0.3 + 0.05, dark)
+		end
+		-- Arms hanging at the sides: shoulder, elbow ring, glove.
+		for _, side in { -1, 1 } do
+			local az = z + side * 1.05
+			box("SuitShoulder", x - 0.32, y + 3.9, az - 0.28, x + 0.32, y + 4.3, az + 0.28, white)
+			box("SuitArm", x - 0.25, y + 3.05, az - 0.24, x + 0.25, y + 3.9, az + 0.24, white)
+			box("SuitElbow", x - 0.28, y + 2.9, az - 0.27, x + 0.28, y + 3.05, az + 0.27, joint)
+			box("SuitArm", x - 0.25, y + 2.2, az - 0.24, x + 0.25, y + 2.9, az + 0.24, white)
+			box("SuitGlove", x - 0.27, y + 1.85, az - 0.22, x + 0.27, y + 2.2, az + 0.22, dark)
+		end
+		-- Collar ring and helmet with a gold visor and a lamp.
+		local collar = cyl("SuitCollar", x, y + 4.3, z, 0.62, 0.18, joint)
+		_ = collar
+		ball("SuitHelmet", x, y + 5.08, z, 1.45, white)
+		ball("Visor", x - 0.26, y + 5.12, z, 1.1, { Color = Color3.fromRGB(205, 140, 45), Material = SMOOTH, Reflectance = 0.5 })
+		box("HelmetLamp", x - 0.35, y + 5.7, z - 0.6, x + 0.1, y + 5.9, z - 0.38, joint)
+		box("HelmetLampLens", x - 0.37, y + 5.72, z - 0.58, x - 0.35, y + 5.88, z - 0.4, { Color = WARM, Material = NEON })
 	end
-	local s3 = box("Sign", 29.95, y + 8, 6, 30, y + 9.2, 13, { Color = DARK })
+	local s3 = box("Sign", 29.95, y + 7, 6, 30, y + 8.2, 13, { Color = DARK })
 	sign(s3, "SUIT UP BEFORE SURFACE ACCESS", Enum.NormalId.Left, AMBER)
 
 	-- Lights.
