@@ -3,7 +3,8 @@
 	(Motor6D.Transform) every frame. Runs on the client, so it's smooth and
 	costs the server nothing.
 
-	Always on: breathing, and a slow weight shift from foot to foot.
+	Always on: breathing, and a slow weight shift from foot to foot (the
+	resting leg bends at the knee and steps slightly forward).
 	On a loop of about 26 seconds:
 	  - looks out of the window, glancing left and right
 	  - reaches down to the credenza on his left and picks up the research file
@@ -170,7 +171,15 @@ local function animate(peri: Model, file: Model?)
 				-- Weight shift: hips slide and tilt toward one foot, then the other.
 				extra = CFrame.new(sway * 0.12, -math.abs(sway) * 0.03, 0) * CFrame.Angles(0, 0, math.rad(-sway * 2.5))
 			elseif name == "LeftHip" or name == "RightHip" then
-				extra = CFrame.Angles(0, 0, math.rad(sway * 2.5))
+				-- The leg taking less weight steps slightly forward and relaxes.
+				local relaxed = if name == "LeftHip" then math.max(sway, 0) else math.max(-sway, 0)
+				extra = CFrame.Angles(math.rad(relaxed * 9), 0, math.rad(sway * 2.5))
+			elseif name == "LeftKnee" or name == "RightKnee" then
+				local relaxed = if name == "LeftKnee" then math.max(sway, 0) else math.max(-sway, 0)
+				extra = CFrame.Angles(math.rad(-relaxed * 14), 0, 0)
+			elseif name == "LeftAnkle" or name == "RightAnkle" then
+				local relaxed = if name == "LeftAnkle" then math.max(sway, 0) else math.max(-sway, 0)
+				extra = CFrame.Angles(math.rad(relaxed * 6), 0, 0)
 			elseif name == "LeftShoulder" or name == "RightShoulder" then
 				extra = CFrame.Angles(0, 0, math.rad(breath * (if name == "LeftShoulder" then -0.6 else 0.6)))
 			end

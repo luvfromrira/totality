@@ -203,8 +203,19 @@ function CrewNPC.Spawn(name: string, cframe: CFrame, parent: Instance?): Model
 		end
 	end
 	root.Anchored = true
-	local _, size = npc:GetBoundingBox()
-	npc:PivotTo(cframe + Vector3.new(0, size.Y / 2, 0))
+	-- Stand him on the spot: put him there, then lift so the lowest body part
+	-- (not hair or hats, which made the old bounding-box method put him in
+	-- the ceiling) touches the floor.
+	npc:PivotTo(cframe)
+	local lowest = math.huge
+	for _, d in npc:GetChildren() do
+		if d:IsA("BasePart") and d ~= root then
+			lowest = math.min(lowest, d.Position.Y - d.Size.Y / 2)
+		end
+	end
+	if lowest < math.huge then
+		npc:PivotTo(cframe + Vector3.new(0, cframe.Position.Y - lowest, 0))
+	end
 	npc.Parent = parent or workspace
 	return npc
 end
