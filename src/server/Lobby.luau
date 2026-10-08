@@ -163,7 +163,7 @@ end
 local OUTLINE = { v(0, 0), v(82, 0), v(98, 11), v(98, 34), v(79, 50), v(36, 50), v(28, 38.6), v(0, 38.6) }
 local VOID = { v(29, 0), v(68, 0), v(68, 20), v(80, 20), v(80, 17), v(85, 17), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
 
-local H1, H2 = 14, 26 -- floor 2 level, roof underside
+local H1, H2 = 14, 34 -- floor 2 level, roof underside
 local PLAT = 2 -- raised platform height
 
 -- Shell ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ local function buildShell()
 	end
 	-- North (back) wall: clerestory windows high over the atrium.
 	-- The pods sit in an annex behind it, their doorways flush with the wall.
-	solid("Wall", 0, 0, 82, 0, { { 32, 74, 17.5, 24 }, { 30.6, 77, 0, 12.6 } })
+	solid("Wall", 0, 0, 82, 0, { { 32, 74, 22, 30 }, { 30.6, 77, 0, 12.6 } })
 	-- West wall: EVA airlock from the locker room, office window.
 	solid("Wall", 0, 38.6, 0, 0, { { 24.6, 29.6, PLAT, PLAT + 8 }, { 8, 30, 16, 23 } })
 	-- South-west wall along the hallway: window band on both floors.
@@ -242,12 +242,12 @@ local function buildShell()
 
 	-- Glass fill and frames for those openings.
 	local glassProps = { Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.7, CanCollide = true }
-	box("Glass", 32, 17.5, -0.6, 74, 24, -0.4, glassProps)
+	box("Glass", 32, 22, -0.6, 74, 30, -0.4, glassProps)
 	box("Glass", -0.6, 16, 8.6, -0.4, 23, 30.6, glassProps)
 	box("Glass", 3, 5, 38.9, 25, 11, 39.1, glassProps)
 	box("Glass", 4, 16, 38.9, 24, 23, 39.1, glassProps)
 	for x = 32, 74, 6 do
-		box("Mullion", x - 0.2, 17.5, -0.8, x + 0.2, 24, -0.1, { Color = DARK, Material = METAL })
+		box("Mullion", x - 0.2, 22, -0.8, x + 0.2, 30, -0.1, { Color = DARK, Material = METAL })
 	end
 	for z = 8.6, 30.6, 5.5 do
 		box("Mullion", -0.8, 16, z - 0.2, -0.1, 23, z + 0.2, { Color = DARK, Material = METAL })
@@ -269,11 +269,11 @@ local function buildShell()
 		local dx, dz = (bx - ax) / len, (bz - az) / len
 		local glass = { Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.72 }
 		seg("Glass", ax, az, bx, bz, 0.8, 12.6, 0.3, -0.25, glass)
-		seg("Glass", ax, az, bx, bz, 14.4, 25.4, 0.3, -0.25, glass)
+		seg("Glass", ax, az, bx, bz, 14.4, H2 - 0.6, 0.3, -0.25, glass)
 		-- Sill, spandrel at the floor-2 slab, head.
 		seg("Sill", ax, az, bx, bz, 0, 0.8, 0.9, -0.15, { Color = DARK, Material = METAL })
 		seg("Spandrel", ax, az, bx, bz, 12.6, 14.4, 0.9, -0.15, { Color = PANEL, Material = SMOOTH })
-		seg("Head", ax, az, bx, bz, 25.4, H2, 0.9, -0.15, { Color = DARK, Material = METAL })
+		seg("Head", ax, az, bx, bz, H2 - 0.6, H2, 0.9, -0.15, { Color = DARK, Material = METAL })
 		-- Warm cove light along the underside of the spandrel.
 		local cove = seg("Cove", ax, az, bx, bz, 12.45, 12.6, 0.3, 0.45, { Color = AMBER, Material = NEON, CanCollide = false })
 		glow(cove, WARM, 10, 0.35, "SurfaceLight")
@@ -286,6 +286,7 @@ local function buildShell()
 		end
 		seg("Transom", ax, az, bx, bz, 6.9, 7.2, 0.6, -0.2, { Color = DARK, Material = METAL })
 		seg("Transom", ax, az, bx, bz, 20, 20.3, 0.6, -0.2, { Color = DARK, Material = METAL })
+		seg("Transom", ax, az, bx, bz, 27, 27.3, 0.6, -0.2, { Color = DARK, Material = METAL })
 	end
 
 	-- Structural columns at every corner of the outline.
@@ -464,6 +465,9 @@ local function stairRail(xa: number, ya: number, xb: number, yb: number, z: numb
 		local x, y = xa + (xb - xa) * t, ya + (yb - ya) * t
 		box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.6, z + 0.12, { Color = STEEL, Material = METAL })
 	end
+	for _, e in { { xa, ya }, { xb, yb } } do
+		box("RailCap", e[1] - 0.2, e[2] + 3.36, z - 0.2, e[1] + 0.2, e[2] + 3.7, z + 0.2, { Color = STEEL, Material = METAL })
+	end
 end
 
 -- Launch pods ---------------------------------------------------------------------
@@ -625,6 +629,11 @@ local function railing(ax: number, az: number, bx: number, bz: number, y: number
 		local x, z = ax + (bx - ax) * t, az + (bz - az) * t
 		box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.4, z + 0.12, { Color = STEEL, Material = METAL })
 	end
+	-- Square caps over the ends so corners where two railings meet are clean.
+	for _, e in { { ax, az }, { bx, bz } } do
+		box("RailCap", e[1] - 0.2, y + 3.36, e[2] - 0.2, e[1] + 0.2, y + 3.7, e[2] + 0.2, { Color = STEEL, Material = METAL })
+		box("RailCap", e[1] - 0.2, y, e[2] - 0.2, e[1] + 0.2, y + 0.24, e[2] + 0.2, { Color = DARK, Material = METAL })
+	end
 end
 
 local function buildStairs()
@@ -652,13 +661,13 @@ local function buildStairs()
 	end
 	-- Railings on both sides of both flights, around the mid landing, and on
 	-- the steps up to the raised platform.
-	stairRail(80, 0, 92, 7, 21.85)
+	stairRail(80, 0, 92, 7, 22)
 	stairRail(80, 0, 92, 7, 17.15)
-	stairRail(92, 7, 80, 14, 11.15)
+	stairRail(92, 7, 80, 14, 11)
 	stairRail(92, 7, 80, 14, 15.85)
 	railing(92, 11, 97.4, 11, 7)
-	for _, z in { 24.2, 35.8 } do
-		stairRail(30, PLAT, 34, 0, z)
+	for _, z in { 24, 36 } do
+		stairRail(29.75, PLAT, 34, 0, z)
 	end
 	railing(97.4, 22, 92, 22, 7)
 end
@@ -755,7 +764,7 @@ end
 -- Peri's office -------------------------------------------------------------------
 local function office()
 	local y = H1
-	local ceil = H2 - 2
+	local ceil = H1 + 10
 	-- East wall: big window over the atrium, door at the south end.
 	box("Wall", 29, y, 0, 29.6, y + 1.5, 31, { Color = WHITE, Material = SMOOTH })
 	box("Wall", 29, ceil - 0.5, 0, 29.6, H2, 31, { Color = WHITE, Material = SMOOTH })
@@ -891,15 +900,15 @@ local function atrium()
 	local orrery = Instance.new("Model")
 	orrery.Name = "Orrery"
 	orrery.Parent = folder
-	local sy = 19
-	box("Cable", cx - 0.06, sy + 2.4, cz - 0.06, cx + 0.06, H2, cz + 0.06, { Color = DARK, CanCollide = false })
-	local sun = ball("Sun", cx, sy, cz, 4.4, { Color = Color3.fromRGB(255, 150, 50), Material = NEON, CanCollide = false }, orrery) :: Part
-	glow(sun, Color3.fromRGB(255, 170, 90), 40, 1.2)
+	local sy = 24
+	box("Cable", cx - 0.06, sy + 3, cz - 0.06, cx + 0.06, H2, cz + 0.06, { Color = DARK, CanCollide = false })
+	local sun = ball("Sun", cx, sy, cz, 6, { Color = Color3.fromRGB(255, 150, 50), Material = NEON, CanCollide = false }, orrery) :: Part
+	glow(sun, Color3.fromRGB(255, 170, 90), 60, 1.4)
 	orrery.PrimaryPart = sun
 	local planets = {
-		{ 4.5, 0.7, Color3.fromRGB(170, 160, 150) }, { 6.5, 1, Color3.fromRGB(230, 200, 140) },
-		{ 8.5, 1.1, Color3.fromRGB(80, 130, 200) }, { 10.5, 0.9, Color3.fromRGB(200, 90, 50) },
-		{ 12, 1.8, Color3.fromRGB(210, 170, 120) },
+		{ 5.2, 0.8, Color3.fromRGB(170, 160, 150) }, { 7.4, 1.2, Color3.fromRGB(230, 200, 140) },
+		{ 9.6, 1.3, Color3.fromRGB(80, 130, 200) }, { 11.6, 1, Color3.fromRGB(200, 90, 50) },
+		{ 13.5, 2.2, Color3.fromRGB(210, 170, 120) },
 	}
 	for i, p in planets do
 		local a = i * 1.3
@@ -984,7 +993,7 @@ local function atrium()
 	panel(72, H1 - 1, 12, WARM, Vector3.new(4, 0.3, 1.6), 16)
 	-- Floor 2 walkway lights on the ceiling.
 	for _, p in { { 34, 44 }, { 50, 46 }, { 66, 46 }, { 82, 42 }, { 92, 24 }, { 88, 8 } } do
-		panel(p[1], H2, p[2], COOL, Vector3.new(4, 0.3, 1.6), 16)
+		panel(p[1], H2, p[2], COOL, Vector3.new(4, 0.3, 1.6), 28)
 	end
 end
 
