@@ -142,6 +142,18 @@ local function panel(x: number, y: number, z: number, color: Color3?, size: Vect
 	p.CFrame = cf(x, y - p.Size.Y / 2, z)
 end
 
+-- Posts and end caps already placed, so railings that meet share one instead
+-- of two identical parts in the same spot (which flicker).
+local placedPosts: { [string]: boolean } = {}
+local function once(kind: string, x: number, y: number, z: number): boolean
+	local key = string.format("%s %.2f %.2f %.2f", kind, x, y, z)
+	if placedPosts[key] then
+		return false
+	end
+	placedPosts[key] = true
+	return true
+end
+
 -- Point-in-polygon on the floor plan (x, z pairs).
 local function inside(poly: { Vector2 }, x: number, z: number): boolean
 	local hit = false
@@ -162,7 +174,7 @@ end
 
 -- Building outline (both floors) and the open atrium above the lobby.
 local OUTLINE = { v(0, 0), v(82, 0), v(98, 11), v(98, 34), v(79, 50), v(36, 50), v(28, 38.6), v(0, 38.6) }
-local VOID = { v(29, 0), v(68, 0), v(68, 20), v(80, 20), v(80, 17), v(85, 17), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
+local VOID = { v(29, 0), v(68, 0), v(68, 20), v(85, 20), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
 
 local H1, H2 = 14, 34 -- floor 2 level, roof underside
 local PLAT = 2 -- raised platform height
@@ -450,17 +462,28 @@ end
 local function stairRail(xa: number, ya: number, xb: number, yb: number, z: number)
 	local len = math.sqrt((xb - xa) ^ 2 + (yb - ya) ^ 2)
 	local angle = math.atan2(yb - ya, xb - xa)
-	local mid = cf((xa + xb) / 2, (ya + yb) / 2, z) * CFrame.Angles(0, 0, angle)
-	B.part(folder, "Rail", Vector3.new(len + 0.3, 0.25, 0.3), mid * CFrame.new(0, 3.5, 0), { Color = STEEL, Material = METAL })
-	B.part(folder, "RailGlass", Vector3.new(len, 3.1, 0.1), mid * CFrame.new(0, 1.8, 0),
+	-- Offsets are vertical (in world space) so the rail sits exactly on top of
+	-- the posts, and the glass keeps the same vertical height along the slope.
+	local function along(up: number): CFrame
+		return cf((xa + xb) / 2, (ya + yb) / 2 + up, z) * CFrame.Angles(0, 0, angle)
+	end
+	local c = math.cos(angle)
+	B.part(folder, "Rail", Vector3.new(len, 0.25 * c, 0.3), along(3.5), { Color = STEEL, Material = METAL })
+	B.part(folder, "RailGlass", Vector3.new(len, 3.1 * c, 0.1), along(1.85),
 		{ Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.65 })
+	B.part(folder, "RailBase", Vector3.new(len, 0.2 * c, 0.3), along(0.2), { Color = DARK, Material = METAL })
 	local n = math.max(1, math.round(math.abs(xb - xa) / 3.5))
 	for i = 0, n do
 		local t = i / n
 		local x, y = xa + (xb - xa) * t, ya + (yb - ya) * t
-		box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.6, z + 0.12, { Color = STEEL, Material = METAL })
+		if once("post", x, y, z) then
+			box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.6, z + 0.12, { Color = STEEL, Material = METAL })
+		end
 	end
 	for _, e in { { xa, ya }, { xb, yb } } do
+		if not once("cap", e[1], e[2], z) then
+			continue
+		end
 		box("RailCap", e[1] - 0.2, e[2] + 3.36, z - 0.2, e[1] + 0.2, e[2] + 3.7, z + 0.2, { Color = STEEL, Material = METAL })
 	end
 end
@@ -502,10 +525,10 @@ local function buildPod(name: string, x0: number)
 	pb("Front", x0 + 0.6, 0.5, z1 - 0.6, cx - 3, 11, z1, hull)
 	pb("Front", cx + 3, 0.5, z1 - 0.6, x1 - 0.6, 11, z1, hull)
 	pb("Front", cx - 3, 9, z1 - 0.6, cx + 3, 11, z1, hull)
-	for _, x in { cx - 3.2, cx + 3 } do
-		pb("DoorGlow", x, 0.5, z1 - 0.05, x + 0.2, 9, z1 + 0.05, { Color = ORANGE, Material = NEON, CanCollide = false })
+	for _, x in { cx - 3.2, cx + 2.98 } do
+		pb("DoorGlow", x, 0.5, z1 - 0.05, x + 0.22, 8.98, z1 + 0.05, { Color = ORANGE, Material = NEON, CanCollide = false })
 	end
-	pb("DoorGlow", cx - 3.2, 9, z1 - 0.05, cx + 3.2, 9.2, z1 + 0.05, { Color = ORANGE, Material = NEON, CanCollide = false })
+	pb("DoorGlow", cx - 3.2, 8.98, z1 - 0.05, cx + 3.2, 9.2, z1 + 0.05, { Color = ORANGE, Material = NEON, CanCollide = false })
 	-- Hazard stripes on the floor in front.
 	for i = 0, 5 do
 		pb("Hazard", cx - 3 + i, 0.5, z1, cx - 2.5 + i, 0.52, z1 + 0.6, { Color = Color3.fromRGB(240, 190, 30) })
@@ -538,7 +561,7 @@ local function buildPod(name: string, x0: number)
 		local sx, sz, face = s[1], s[2], s[3]
 		pb("SeatBase", sx - 0.8, 0.6, sz - 1, sx + 0.8, 2.4, sz + 1, trimDark)
 		pb("SeatCushion", sx - 0.8, 2.4, sz - 1, sx + 0.8, 2.8, sz + 1, { Color = ORANGE, Material = Enum.Material.Fabric })
-		pb("SeatBack", sx - face * 0.8 - 0.2, 2.4, sz - 1, sx - face * 0.8 + 0.2, 6.4, sz + 1, { Color = ORANGE, Material = Enum.Material.Fabric })
+		pb("SeatBack", sx - face * 0.8 - 0.2, 2.4, sz - 0.98, sx - face * 0.8 + 0.2, 6.4, sz + 0.98, { Color = ORANGE, Material = Enum.Material.Fabric })
 		pb("Headrest", sx - face * 0.8 - 0.25, 6.4, sz - 0.6, sx - face * 0.8 + 0.25, 7.4, sz + 0.6, trimDark)
 		pb("Harness", sx - face * 0.4 - 0.1, 3, sz - 0.6, sx - face * 0.4 + 0.1, 6.2, sz - 0.4, { Color = DARK })
 		pb("Harness", sx - face * 0.4 - 0.1, 3, sz + 0.4, sx - face * 0.4 + 0.1, 6.2, sz + 0.6, { Color = DARK })
@@ -622,10 +645,15 @@ local function railing(ax: number, az: number, bx: number, bz: number, y: number
 	for i = 0, n do
 		local t = i / n
 		local x, z = ax + (bx - ax) * t, az + (bz - az) * t
-		box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.4, z + 0.12, { Color = STEEL, Material = METAL })
+		if once("post", x, y, z) then
+			box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.4, z + 0.12, { Color = STEEL, Material = METAL })
+		end
 	end
 	-- Square caps over the ends so corners where two railings meet are clean.
 	for _, e in { { ax, az }, { bx, bz } } do
+		if not once("cap", e[1], y, e[2]) then
+			continue
+		end
 		box("RailCap", e[1] - 0.2, y + 3.36, e[2] - 0.2, e[1] + 0.2, y + 3.7, e[2] + 0.2, { Color = STEEL, Material = METAL })
 		box("RailCap", e[1] - 0.2, y, e[2] - 0.2, e[1] + 0.2, y + 0.24, e[2] + 0.2, { Color = DARK, Material = METAL })
 	end
@@ -657,7 +685,9 @@ local function buildStairs()
 	-- Railings on both sides of both flights and around the mid landing.
 	stairRail(80, 0, 92, 7, 22)
 	stairRail(80, 0, 92, 7, 17.15)
-	stairRail(92, 7, 80, 14, 11)
+	-- (The north rail of the upper flight stops where the landing above closes
+	-- in over it; the railing around the stair opening takes over from there.)
+	stairRail(92, 7, 86.2, 10.4, 11)
 	stairRail(92, 7, 80, 14, 15.85)
 	railing(92, 11, 97.4, 11, 7)
 	railing(97.4, 22, 92, 22, 7)
@@ -728,7 +758,7 @@ local function buildFloor2()
 	end
 	-- Edge beams under the walkway, along the atrium edge, on columns.
 	local edges = {
-		{ 29, 30, 39, 39.4 }, { 39, 39.4, 76, 39.4 }, { 76, 39.4, 85, 31 }, { 85, 31, 85, 17 },
+		{ 29, 30, 39, 39.4 }, { 39, 39.4, 76, 39.4 }, { 76, 39.4, 85, 31 }, { 85, 31, 85, 20 }, { 85, 20, 68, 20 },
 	}
 	for _, e in edges do
 		seg("Beam", e[1], e[2], e[3], e[4], H1 - 1.4, H1 - 0.35, 0.6, -0.3, { Color = DARK, Material = METAL })
@@ -743,13 +773,12 @@ local function buildFloor2()
 	railing(29.6, 30.6, 39, 39.4, H1)
 	railing(39, 39.4, 76, 39.4, H1)
 	railing(76, 39.4, 85, 31, H1)
-	railing(85, 31, 85, 17, H1)
+	railing(85, 31, 85, 20, H1)
 	railing(68, 0.7, 68, 20, H1)
-	railing(68, 20, 80, 20, H1)
-	railing(80, 20, 80, 17, H1)
+	railing(68, 20, 85, 20, H1)
 	railing(80, 11, 92, 11, H1)
 	railing(92, 11, 92, 17, H1)
-	railing(85, 17, 92, 17, H1)
+	railing(80, 17, 92, 17, H1)
 end
 
 -- A little picture of Aphe and Peri, drawn with UI on the photo's face:
@@ -791,9 +820,9 @@ local function photoOfApheAndPeri(photo: Part)
 	shape(Color3.fromRGB(160, 70, 45), 0.5, 0.88, 1, 0.28, nil, 3)
 	shape(Color3.fromRGB(130, 55, 38), 0.2, 0.76, 0.5, 0.12, 0.5, 3)
 	shape(Color3.fromRGB(140, 60, 40), 0.85, 0.75, 0.45, 0.14, 0.5, 3)
-	-- Aphe on the left: lavender skin, black suit and arms.
+	-- Aphe on the left (before the illness turned him purple): tan skin, black suit.
 	shape(Color3.fromRGB(25, 25, 30), 0.3, 0.83, 0.28, 0.42, 0.35, 4)
-	shape(Color3.fromRGB(206, 171, 236), 0.3, 0.5, 0.22, 0.22, 0.5, 5)
+	shape(Color3.fromRGB(214, 172, 132), 0.3, 0.5, 0.22, 0.22, 0.5, 5)
 	shape(Color3.fromRGB(40, 30, 50), 0.3, 0.42, 0.24, 0.1, 0.5, 6)
 	-- Peri on the right: tan skin, green cardigan.
 	shape(Color3.fromRGB(70, 115, 72), 0.7, 0.83, 0.28, 0.42, 0.35, 4)
@@ -834,16 +863,16 @@ local function office()
 	box("Wall", 29, y, 31, 29.6, H2, 33, { Color = WHITE, Material = SMOOTH })
 	box("Wall", 29, y + 8, 33, 29.6, H2, 37, { Color = WHITE, Material = SMOOTH })
 	box("Wall", 29, y, 37, 29.6, H2, 38.6, { Color = WHITE, Material = SMOOTH })
-	box("DoorFrame", 28.9, y, 32.8, 29.7, y + 8.2, 33, { Color = ORANGE })
-	box("DoorFrame", 28.9, y, 37, 29.7, y + 8.2, 37.2, { Color = ORANGE })
-	box("DoorFrame", 28.9, y + 8, 33, 29.7, y + 8.2, 37, { Color = ORANGE })
+	box("DoorFrame", 28.9, y, 32.8, 29.7, y + 8.2, 33.03, { Color = ORANGE })
+	box("DoorFrame", 28.9, y, 36.97, 29.7, y + 8.2, 37.2, { Color = ORANGE })
+	box("DoorFrame", 28.9, y + 7.97, 33.03, 29.7, y + 8.2, 36.97, { Color = ORANGE })
 	local plate = box("DoorPlate", 29.6, y + 5, 37.4, 29.65, y + 6.4, 38.4, { Color = DARK })
 	sign(plate, "PERI", Enum.NormalId.Right, AMBER)
 	-- Ceiling with crown moulding, plank floor, rugs.
 	box("Ceiling", 0, ceil, 0, 29, ceil + 0.2, 38.6, { Color = Color3.fromRGB(232, 228, 220), Material = SMOOTH })
 	local trimWood = { Color = Color3.fromRGB(92, 62, 42), Material = Enum.Material.Wood }
 	box("Crown", 0, ceil - 0.35, 0, 29, ceil, 0.25, trimWood)
-	box("Crown", 0, ceil - 0.35, 0, 0.25, ceil, 38.6, trimWood)
+	box("Crown", 0, ceil - 0.35, 0.25, 0.25, ceil, 38.35, trimWood)
 	box("Crown", 0, ceil - 0.35, 38.35, 29, ceil, 38.6, trimWood)
 	local planks = { Color3.fromRGB(150, 108, 72), Color3.fromRGB(140, 100, 66), Color3.fromRGB(158, 116, 78) }
 	for i = 0, 18 do
@@ -1003,7 +1032,7 @@ local function office()
 		box("Note", nx, ny, 0.4, nx + 0.9, ny + 1.1, 0.42, { Color = noteColors[k % 4 + 1] })
 		ball("Pin", nx + 0.45, ny + 0.95, 0.44, 0.12, { Color = Color3.fromRGB(200, 40, 40) })
 	end
-	local memo = box("Memo", 21.7, y + 6.7, 0.4, 23.8, y + 8.1, 0.42, { Color = Color3.fromRGB(255, 255, 250) })
+	local memo = box("Memo", 21.7, y + 6.7, 0.43, 23.8, y + 8.1, 0.45, { Color = Color3.fromRGB(255, 255, 250) })
 	sign(memo, "RECOVERY TEAM\nbring them home", Enum.NormalId.Back, Color3.fromRGB(60, 60, 70), Enum.Font.Garamond)
 	box("Cabinet", 19, y, 0.2, 21.4, y + 3.6, 2, { Color = STEEL, Material = METAL })
 	for d = 0, 1 do
@@ -1199,7 +1228,7 @@ local function atrium()
 		local base = cf(x, 0, z) * CFrame.Angles(0, facing, 0)
 		local fabric = { Color = FABRIC, Material = Enum.Material.Fabric }
 		B.part(model, "Seat", Vector3.new(7, 1.6, 2.6), base * CFrame.new(0, 0.9, 0), fabric)
-		B.part(model, "Back", Vector3.new(7, 2.6, 0.8), base * CFrame.new(0, 2, 1.6), fabric)
+		B.part(model, "Back", Vector3.new(6.98, 2.6, 0.8), base * CFrame.new(0, 2.01, 1.65), fabric)
 		B.part(model, "Arm", Vector3.new(0.8, 2.4, 3.4), base * CFrame.new(-3.9, 1.3, 0.4), fabric)
 		B.part(model, "Arm", Vector3.new(0.8, 2.4, 3.4), base * CFrame.new(3.9, 1.3, 0.4), fabric)
 		B.part(model, "Cushion", Vector3.new(3.2, 0.3, 2.2), base * CFrame.new(-1.7, 1.85, -0.1), { Color = Color3.fromRGB(80, 88, 104), Material = Enum.Material.Fabric })
