@@ -305,12 +305,6 @@ local function buildPlatform()
 		box("Nosing", 30 + (k - 1), top, 24, 30 + (k - 1) + 0.15, top + 0.04, 36, { Color = AMBER, Material = NEON, CanCollide = false })
 	end
 	box("Nosing", 29.85, PLAT, 24, 30, PLAT + 0.04, 36, { Color = AMBER, Material = NEON, CanCollide = false })
-	-- Rails where the platform edge drops off.
-	for _, r in { { 23, 24 }, { 36, 38.6 } } do
-		box("RailPost", 29.6, PLAT, r[1] + 0.1, 29.9, PLAT + 3.4, r[1] + 0.4, { Color = STEEL, Material = METAL })
-		box("Rail", 29.55, PLAT + 3.4, r[1], 29.95, PLAT + 3.6, r[2], { Color = STEEL, Material = METAL })
-		box("RailGlass", 29.7, PLAT + 0.2, r[1], 29.8, PLAT + 3.4, r[2], { Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.6 })
-	end
 	-- Ceiling lights under the office.
 	for _, p in { { 8, 30 }, { 18, 30 }, { 25, 30 } } do
 		panel(p[1], H1 - 1.1, p[2], WARM, Vector3.new(5, 0.3, 1.6))
@@ -659,16 +653,12 @@ local function buildStairs()
 			cf(86, 10.3, z + 0.15) * CFrame.Angles(0, 0, math.atan2(-7, 12)), { Color = DARK, Material = METAL })
 		_ = s
 	end
-	-- Railings on both sides of both flights, around the mid landing, and on
-	-- the steps up to the raised platform.
+	-- Railings on both sides of both flights and around the mid landing.
 	stairRail(80, 0, 92, 7, 22)
 	stairRail(80, 0, 92, 7, 17.15)
 	stairRail(92, 7, 80, 14, 11)
 	stairRail(92, 7, 80, 14, 15.85)
 	railing(92, 11, 97.4, 11, 7)
-	for _, z in { 24, 36 } do
-		stairRail(29.75, PLAT, 34, 0, z)
-	end
 	railing(97.4, 22, 92, 22, 7)
 end
 
@@ -744,7 +734,7 @@ local function buildFloor2()
 		local lit = seg("BeamLight", e[1], e[2], e[3], e[4], H1 - 1.5, H1 - 1.4, 0.3, -0.3, { Color = COOL, Material = NEON, CanCollide = false })
 		glow(lit, COOL, 12, 0.5, "SurfaceLight")
 	end
-	for _, p in { v(39, 39.4), v(57.5, 39.4), v(76, 39.4), v(85, 31), v(85, 23.5), v(29, 30), v(68.5, 19.5) } do
+	for _, p in { v(39, 39.4), v(57.5, 39.4), v(76, 39.4), v(85, 31), v(85, 23.5), v(68.5, 19.5) } do
 		box("Column", p.X - 0.45, 0.1, p.Y - 0.45, p.X + 0.45, H1 - 1.4, p.Y + 0.45, { Color = DARK, Material = METAL })
 	end
 
@@ -780,77 +770,241 @@ local function office()
 	box("DoorFrame", 28.9, y + 8, 33, 29.7, y + 8.2, 37, { Color = ORANGE })
 	local plate = box("DoorPlate", 29.6, y + 5, 37.4, 29.65, y + 6.4, 38.4, { Color = DARK })
 	sign(plate, "PERI", Enum.NormalId.Right, AMBER)
-	-- Drop ceiling, floor and rug.
-	box("Ceiling", 0, ceil, 0, 29, ceil + 0.2, 38.6, { Color = PANEL, Material = SMOOTH })
-	box("Carpet", 0, y, 0, 29, y + 0.05, 38.6, { Color = Color3.fromRGB(70, 60, 64), Material = Enum.Material.Carpet })
-	box("Rug", 9, y + 0.05, 9, 26, y + 0.08, 23, { Color = Color3.fromRGB(120, 60, 50), Material = Enum.Material.Fabric })
-	for _, p in { { 8, 10 }, { 20, 10 }, { 8, 26 }, { 20, 26 } } do
-		panel(p[1], ceil, p[2], WARM, Vector3.new(4, 0.3, 4), 16)
+	-- Ceiling with crown moulding, plank floor, rugs.
+	box("Ceiling", 0, ceil, 0, 29, ceil + 0.2, 38.6, { Color = Color3.fromRGB(232, 228, 220), Material = SMOOTH })
+	local trimWood = { Color = Color3.fromRGB(92, 62, 42), Material = Enum.Material.Wood }
+	box("Crown", 0, ceil - 0.35, 0, 29, ceil, 0.25, trimWood)
+	box("Crown", 0, ceil - 0.35, 0, 0.25, ceil, 38.6, trimWood)
+	box("Crown", 0, ceil - 0.35, 38.35, 29, ceil, 38.6, trimWood)
+	local planks = { Color3.fromRGB(150, 108, 72), Color3.fromRGB(140, 100, 66), Color3.fromRGB(158, 116, 78) }
+	for i = 0, 18 do
+		local z0 = i * 38.6 / 19
+		box("Plank", 0, y, z0, 29, y + 0.05, z0 + 38.6 / 19, { Color = planks[i % 3 + 1], Material = Enum.Material.WoodPlanks })
+	end
+	box("Rug", 13, y + 0.05, 9, 27.5, y + 0.08, 23, { Color = Color3.fromRGB(110, 46, 40), Material = Enum.Material.Fabric })
+	box("RugBorder", 13.4, y + 0.08, 9.4, 27.1, y + 0.09, 9.8, { Color = Color3.fromRGB(200, 160, 90), Material = Enum.Material.Fabric })
+	box("RugBorder", 13.4, y + 0.08, 22.2, 27.1, y + 0.09, 22.6, { Color = Color3.fromRGB(200, 160, 90), Material = Enum.Material.Fabric })
+	box("Rug", 4.2, y + 0.05, 23.5, 12, y + 0.08, 34.5, { Color = Color3.fromRGB(60, 70, 90), Material = Enum.Material.Fabric })
+	-- Wainscoting: dark wood panels along the lower walls, with a rail on top.
+	box("Wainscot", 0, y, 0, 3, y + 3, 0.2, trimWood)
+	box("Wainscot", 0, y, 0.2, 0.2, y + 2, 38.4, trimWood)
+	box("Wainscot", 0.2, y, 38.4, 29, y + 2, 38.6, trimWood)
+	box("ChairRail", 0, y + 3, 0, 3, y + 3.2, 0.3, trimWood)
+	for _, p in { { 8, 8 }, { 8, 28 }, { 21, 6 } } do
+		panel(p[1], ceil, p[2], WARM, Vector3.new(3, 0.25, 3), 16)
 	end
 
-	-- Desk with its back to the atrium window.
-	local wood = { Color = WOOD, Material = Enum.Material.Wood }
-	box("DeskTop", 19, y + 2.8, 11, 24, y + 3.1, 21, wood)
-	box("DeskSide", 19.2, y, 11.2, 23.8, y + 2.8, 11.8, wood)
-	box("DeskSide", 19.2, y, 20.2, 23.8, y + 2.8, 20.8, wood)
-	box("DeskFront", 19, y + 0.4, 11.8, 19.4, y + 2.8, 20.2, wood)
-	for i, z in { 13.2, 16, 18.8 } do
-		box("Monitor", 22.6, y + 3.6, z - 1.2, 22.8, y + 5.3, z + 1.2, { Color = DARK })
-		box("Screen", 22.55, y + 3.7, z - 1.1, 22.6, y + 5.2, z + 1.1, { Color = if i == 2 then Color3.fromRGB(255, 160, 80) else Color3.fromRGB(90, 160, 220), Material = NEON })
-		box("MonitorStand", 22.7, y + 3.1, z - 0.2, 22.9, y + 3.6, z + 0.2, { Color = DARK })
+	-- The desk: a proper executive desk, back to the atrium window, with a
+	-- return wing. Peri's chair sits behind it; no visitor chairs.
+	local walnut = { Color = Color3.fromRGB(96, 60, 38), Material = Enum.Material.Wood }
+	local walnutDark = { Color = Color3.fromRGB(64, 40, 26), Material = Enum.Material.Wood }
+	local brass = { Color = Color3.fromRGB(200, 165, 90), Material = METAL }
+	local top = y + 2.9
+	box("DeskTop", 18.5, top, 11, 24.5, top + 0.25, 21, walnut)
+	box("DeskEdge", 18.4, top - 0.1, 10.9, 24.6, top, 21.1, walnutDark)
+	box("DeskPad", 21.6, top + 0.25, 13.6, 24.2, top + 0.28, 18.4, { Color = Color3.fromRGB(40, 34, 30), Material = Enum.Material.Leather })
+	-- Pedestals with drawers at each end, modesty panel facing the visitor side.
+	for _, z0 in { 11.2, 18.3 } do
+		box("Pedestal", 18.7, y, z0, 24.3, top - 0.1, z0 + 2.5, walnutDark)
+		for d = 0, 2 do
+			local dy = y + 0.25 + d * 0.85
+			box("Drawer", 24.3, dy, z0 + 0.15, 24.38, dy + 0.75, z0 + 2.35, walnut)
+			box("DrawerPull", 24.38, dy + 0.3, z0 + 0.9, 24.48, dy + 0.42, z0 + 1.6, brass)
+		end
 	end
-	box("Keyboard", 21.2, y + 3.1, 15, 21.8, y + 3.2, 17, { Color = DARK })
-	-- The photo on the desk.
-	local frame = box("PhotoFrame", 20.2, y + 3.1, 19.2, 20.4, y + 4.1, 20.2, { Color = Color3.fromRGB(200, 170, 110), Material = METAL })
-	local photo = box("Photo", 20.15, y + 3.2, 19.3, 20.2, y + 4, 20.1, { Color = Color3.fromRGB(230, 220, 235) })
-	sign(photo, "A + P", Enum.NormalId.Left, Color3.fromRGB(150, 90, 170))
-	_ = frame
-	local lamp = box("Lamp", 20, y + 4.2, 12, 20.8, y + 4.5, 12.8, { Color = WARM, Material = NEON })
-	box("LampStem", 20.3, y + 3.1, 12.3, 20.5, y + 4.2, 12.5, { Color = STEEL, Material = METAL })
-	glow(lamp, WARM, 10, 0.6)
-	-- Chair behind the desk, visitor chairs in front.
-	box("ChairSeat", 24.6, y + 1.8, 15, 26.6, y + 2.2, 17, { Color = Color3.fromRGB(30, 30, 34) })
-	box("ChairBack", 26.6, y + 2.2, 15, 27, y + 5.4, 17, { Color = Color3.fromRGB(30, 30, 34) })
-	box("ChairPost", 25.45, y, 15.85, 25.75, y + 1.8, 16.15, { Color = STEEL, Material = METAL })
-	for _, z in { 13, 19 } do
-		box("ChairSeat", 15, y + 1.6, z - 1, 17, y + 2, z + 1, { Color = FABRIC })
-		box("ChairBack", 14.6, y + 2, z - 1, 15, y + 4.4, z + 1, { Color = FABRIC })
-		for _, dx in { 15.2, 16.6 } do
-			for _, dz in { z - 0.8, z + 0.6 } do
-				box("ChairLeg", dx, y, dz, dx + 0.2, y + 1.6, dz + 0.2, { Color = STEEL, Material = METAL })
+	box("Modesty", 18.6, y + 0.6, 13.7, 18.9, top - 0.1, 18.3, walnutDark)
+	for _, z in { 14.6, 16, 17.4 } do
+		box("ModestyGroove", 18.55, y + 0.9, z - 0.05, 18.6, top - 0.4, z + 0.05, walnut)
+	end
+	-- Return wing along the window side with the printer.
+	box("ReturnTop", 22.5, top, 21, 24.5, top + 0.25, 25, walnut)
+	box("ReturnBase", 22.7, y, 21.2, 24.3, top, 24.8, walnutDark)
+	box("Printer", 22.8, top + 0.25, 22.6, 24.2, top + 1.05, 24.4, { Color = Color3.fromRGB(70, 72, 78) })
+	box("PrinterTray", 22.6, top + 0.55, 22.9, 22.8, top + 0.6, 24.1, { Color = Color3.fromRGB(230, 230, 225) })
+	-- Two monitors on a single arm.
+	box("MonitorArm", 19.1, top + 0.25, 15.85, 19.4, top + 2.2, 16.15, { Color = DARK, Material = METAL })
+	box("MonitorArm", 19.4, top + 2, 14, 19.8, top + 2.2, 18, { Color = DARK, Material = METAL })
+	for i, z in { 14.6, 17.4 } do
+		box("Monitor", 19.8, top + 1.1, z - 1.35, 20, top + 3.1, z + 1.35, { Color = DARK })
+		box("Screen", 20, top + 1.2, z - 1.25, 20.05, top + 3, z + 1.25,
+			{ Color = if i == 1 then Color3.fromRGB(90, 150, 210) else Color3.fromRGB(255, 160, 80), Material = NEON })
+	end
+	box("Keyboard", 22.4, top + 0.28, 14.9, 23, top + 0.38, 17.1, { Color = DARK })
+	box("Mouse", 22.5, top + 0.28, 17.6, 22.9, top + 0.4, 17.85, { Color = DARK })
+	-- Desk things: nameplate, photo, lamp, mug, paperwork, pen cup, a Mars rock.
+	local nameplate = B.part(folder, "Nameplate", Vector3.new(0.5, 0.4, 2), cf(19, top + 0.45, 16) * CFrame.Angles(0, 0, math.rad(20)),
+		{ Color = Color3.fromRGB(30, 28, 26), Material = SMOOTH })
+	sign(nameplate, "PERI", Enum.NormalId.Left, Color3.fromRGB(220, 190, 120), Enum.Font.Garamond)
+	box("PhotoFrame", 20.3, top + 0.25, 19.3, 20.45, top + 1.35, 20.3, brass)
+	local photo = box("Photo", 20.45, top + 0.35, 19.4, 20.5, top + 1.25, 20.2, { Color = Color3.fromRGB(230, 220, 235) })
+	sign(photo, "A + P", Enum.NormalId.Right, Color3.fromRGB(150, 90, 170))
+	cyl("LampBase", 23.6, top + 0.25, 12, 0.4, 0.15, brass)
+	box("LampStem", 23.55, top + 0.4, 11.95, 23.65, top + 2.1, 12.05, brass)
+	box("LampArm", 22.7, top + 2.05, 11.95, 23.65, top + 2.15, 12.05, brass)
+	local shade = cyl("LampShade", 22.7, top + 1.65, 12, 0.45, 0.45, { Color = Color3.fromRGB(40, 90, 60), Material = Enum.Material.Glass, Transparency = 0.1 })
+	glow(shade, WARM, 12, 0.7)
+	cyl("Mug", 24, top + 0.25, 19.4, 0.22, 0.5, { Color = ORANGE })
+	cyl("Coffee", 24, top + 0.7, 19.4, 0.18, 0.06, { Color = Color3.fromRGB(60, 36, 20) })
+	for k = 0, 4 do
+		box("Paper", 20.5, top + 0.25 + k * 0.04, 11.3 + k * 0.03, 21.5, top + 0.28 + k * 0.04, 12.7 + k * 0.03, { Color = Color3.fromRGB(240, 238, 230) })
+	end
+	box("Folder", 20.4, top + 0.47, 11.2, 21.6, top + 0.52, 12.8, { Color = Color3.fromRGB(200, 170, 110) })
+	cyl("PenCup", 21.2, top + 0.25, 20.3, 0.22, 0.55, { Color = DARK })
+	for k = 0, 2 do
+		box("Pen", 21.15 + k * 0.05, top + 0.6, 20.25, 21.2 + k * 0.05, top + 1.1, 20.3, { Color = ({ Color3.fromRGB(30, 60, 160), Color3.fromRGB(180, 30, 30), DARK })[k + 1] })
+	end
+	ball("MarsRock", 19.6, top + 0.45, 20.4, 0.45, { Color = Color3.fromRGB(170, 80, 50), Material = Enum.Material.Rock })
+	-- Wastebasket under the desk.
+	cyl("Bin", 23.4, y, 20.5, 0.4, 1.1, { Color = DARK, Material = METAL })
+
+	-- Peri's chair: five-star base, gas lift, padded seat and high back.
+	local leather = { Color = Color3.fromRGB(34, 32, 34), Material = Enum.Material.Leather }
+	local chairX, chairZ = 25.8, 16
+	for k = 0, 4 do
+		local a = k * math.pi * 2 / 5
+		B.part(folder, "ChairLeg", Vector3.new(1.1, 0.12, 0.18),
+			cf(chairX + math.cos(a) * 0.55, y + 0.3, chairZ + math.sin(a) * 0.55) * CFrame.Angles(0, -a, 0), { Color = DARK, Material = METAL })
+		ball("Caster", chairX + math.cos(a) * 1.05, y + 0.12, chairZ + math.sin(a) * 1.05, 0.24, { Color = DARK })
+	end
+	cyl("GasLift", chairX, y + 0.3, chairZ, 0.12, 1.4, { Color = STEEL, Material = METAL })
+	box("ChairSeat", chairX - 0.9, y + 1.7, chairZ - 0.95, chairX + 0.8, y + 2.15, chairZ + 0.95, leather)
+	box("ChairBack", chairX + 0.75, y + 2.1, chairZ - 0.9, chairX + 1.05, y + 5.3, chairZ + 0.9, leather)
+	box("ChairHead", chairX + 0.8, y + 5.3, chairZ - 0.6, chairX + 1.05, y + 5.9, chairZ + 0.6, leather)
+	for _, side in { -1, 1 } do
+		box("ArmPost", chairX + 0.1, y + 2.15, chairZ + side * 0.95 - 0.08, chairX + 0.3, y + 2.9, chairZ + side * 0.95 + 0.08, { Color = DARK, Material = METAL })
+		box("ArmPad", chairX - 0.5, y + 2.9, chairZ + side * 0.95 - 0.14, chairX + 0.7, y + 3.05, chairZ + side * 0.95 + 0.14, leather)
+	end
+
+	-- Low credenza under the atrium window behind the chair, with a Mars globe,
+	-- an award and a plant.
+	box("Credenza", 27.4, y, 9, 28.9, y + 2.4, 23, walnutDark)
+	box("CredenzaTop", 27.3, y + 2.4, 8.9, 29, y + 2.6, 23.1, walnut)
+	for z = 9.4, 22, 3.4 do
+		box("CredenzaDoor", 27.32, y + 0.3, z, 27.4, y + 2.2, z + 3.1, walnut)
+		box("DrawerPull", 27.22, y + 1.2, z + 1.4, 27.32, y + 1.5, z + 1.7, brass)
+	end
+	cyl("GlobeStand", 28.15, y + 2.6, 11, 0.35, 0.2, brass)
+	box("GlobeAxis", 28.1, y + 2.8, 10.95, 28.2, y + 3.2, 11.05, brass)
+	ball("MarsGlobe", 28.15, y + 3.75, 11, 1.2, { Color = Color3.fromRGB(190, 90, 55), Material = SMOOTH })
+	box("Award", 27.9, y + 2.6, 15.6, 28.4, y + 3.9, 16.2, { Color = Color3.fromRGB(180, 210, 230), Material = Enum.Material.Glass, Transparency = 0.2 })
+	box("AwardBase", 27.85, y + 2.6, 15.5, 28.45, y + 2.8, 16.3, walnutDark)
+	cyl("Pot", 28.15, y + 2.6, 21, 0.45, 0.6, { Color = WHITE })
+	ball("Succulent", 28.15, y + 3.4, 21, 0.9, { Color = Color3.fromRGB(80, 140, 90), Material = Enum.Material.Grass })
+
+	-- Built-in bookshelf along the north wall: books, boxes, a few keepsakes.
+	box("ShelfSide", 3, y, 0.2, 3.3, y + 8.6, 2, walnutDark)
+	box("ShelfSide", 17.7, y, 0.2, 18, y + 8.6, 2, walnutDark)
+	box("ShelfBack", 3.3, y, 0.2, 17.7, y + 8.6, 0.35, walnut)
+	box("ShelfTop", 2.9, y + 8.6, 0.2, 18.1, y + 8.9, 2.2, walnutDark)
+	local bookColors = { Color3.fromRGB(150, 50, 40), Color3.fromRGB(40, 70, 120), Color3.fromRGB(200, 170, 90),
+		Color3.fromRGB(50, 100, 70), Color3.fromRGB(90, 60, 110), Color3.fromRGB(220, 220, 210), Color3.fromRGB(30, 30, 34) }
+	local rng = Random.new(7)
+	for shelf = 0, 3 do
+		local sy = y + 0.6 + shelf * 2
+		box("ShelfBoard", 3.3, sy - 0.15, 0.35, 17.7, sy, 2, walnutDark)
+		local x = 3.5
+		while x < 17.3 do
+			local roll = rng:NextNumber()
+			if roll < 0.08 and x < 16 then
+				-- A keepsake instead of books.
+				ball("Keepsake", x + 0.6, sy + 0.45, 1.2, 0.8, { Color = Color3.fromRGB(rng:NextInteger(120, 220), rng:NextInteger(80, 160), rng:NextInteger(60, 120)), Material = METAL })
+				x += 1.4
+			elseif roll < 0.14 and x < 15.8 then
+				box("StoreBox", x, sy, 0.6, x + 1.4, sy + 1, 1.9, { Color = Color3.fromRGB(180, 160, 130), Material = Enum.Material.Cardboard })
+				x += 1.5
+			else
+				local w = rng:NextNumber(0.22, 0.45)
+				local h = rng:NextNumber(1.1, 1.7)
+				box("Book", x, sy, 0.6, x + w, sy + h, 1.9, { Color = bookColors[rng:NextInteger(1, #bookColors)] })
+				x += w + 0.03
 			end
 		end
 	end
+	cyl("Pot", 10.5, y + 8.9, 1.2, 0.5, 0.6, { Color = Color3.fromRGB(190, 120, 80) })
+	for k = 0, 4 do
+		box("Vine", 10.3 + k * 0.1, y + 7.2 - k * 0.3, 1.9, 10.5 + k * 0.1, y + 9.4, 2.05, { Color = Color3.fromRGB(70, 130, 70), Material = Enum.Material.Grass })
+	end
 
-	-- Bookshelf along the north wall.
-	box("Shelf", 3, y, 0, 18, y + 8, 1.6, wood)
-	local bookColors = { Color3.fromRGB(150, 50, 40), Color3.fromRGB(40, 70, 120), Color3.fromRGB(200, 170, 90),
-		Color3.fromRGB(50, 100, 70), Color3.fromRGB(90, 60, 110), Color3.fromRGB(220, 220, 210) }
-	local rng = Random.new(7)
-	for shelf = 0, 3 do
-		local sy = y + 0.6 + shelf * 1.9
-		box("ShelfBoard", 3, sy - 0.15, 1.6, 18, sy, 1.7, wood)
-		local x = 3.4
-		while x < 17.2 do
-			local w = rng:NextNumber(0.25, 0.5)
-			local h = rng:NextNumber(1.1, 1.6)
-			box("Book", x, sy, 1.62, x + w, sy + h, 2.6, { Color = bookColors[rng:NextInteger(1, #bookColors)] })
-			x += w + 0.03
-		end
+	-- Cork board with pinned notes, and a filing cabinet under it.
+	box("CorkFrame", 18.6, y + 4.6, 0.2, 24.4, y + 8.6, 0.35, walnutDark)
+	box("Cork", 18.8, y + 4.8, 0.35, 24.2, y + 8.4, 0.4, { Color = Color3.fromRGB(190, 150, 100), Material = Enum.Material.Fabric })
+	local noteColors = { Color3.fromRGB(255, 240, 140), Color3.fromRGB(255, 255, 250), Color3.fromRGB(170, 220, 255), Color3.fromRGB(255, 190, 200) }
+	for k = 0, 7 do
+		local nx, ny = 19.2 + (k % 4) * 1.25, y + 5.2 + math.floor(k / 4) * 1.5
+		box("Note", nx, ny, 0.4, nx + 0.9, ny + 1.1, 0.42, { Color = noteColors[k % 4 + 1] })
+		ball("Pin", nx + 0.45, ny + 0.95, 0.44, 0.12, { Color = Color3.fromRGB(200, 40, 40) })
 	end
-	-- Lounge corner: couch, coffee table, plant.
-	box("Couch", 1, y, 24, 3.5, y + 1.8, 34, { Color = Color3.fromRGB(150, 135, 120), Material = Enum.Material.Fabric })
-	box("CouchBack", 0.4, y, 24, 1.2, y + 4, 34, { Color = Color3.fromRGB(150, 135, 120), Material = Enum.Material.Fabric })
-	box("CouchArm", 1, y, 23.4, 3.5, y + 2.8, 24, { Color = Color3.fromRGB(140, 125, 110), Material = Enum.Material.Fabric })
-	box("CouchArm", 1, y, 34, 3.5, y + 2.8, 34.6, { Color = Color3.fromRGB(140, 125, 110), Material = Enum.Material.Fabric })
-	box("CoffeeTable", 5.5, y + 1.3, 26.5, 9, y + 1.5, 31.5, { Color = Color3.fromRGB(40, 42, 48), Material = Enum.Material.Glass, Transparency = 0.2 })
+	local memo = box("Memo", 21.7, y + 6.7, 0.4, 23.8, y + 8.1, 0.42, { Color = Color3.fromRGB(255, 255, 250) })
+	sign(memo, "RECOVERY TEAM\nbring them home", Enum.NormalId.Back, Color3.fromRGB(60, 60, 70), Enum.Font.Garamond)
+	box("Cabinet", 19, y, 0.2, 21.4, y + 3.6, 2, { Color = STEEL, Material = METAL })
+	for d = 0, 1 do
+		box("Drawer", 19.15, y + 0.3 + d * 1.65, 2, 21.25, y + 1.75 + d * 1.65, 2.05, { Color = Color3.fromRGB(120, 124, 130), Material = METAL })
+		box("DrawerPull", 19.8, y + 1.3 + d * 1.65, 2.05, 20.6, y + 1.42 + d * 1.65, 2.15, brass)
+	end
+
+	-- Coffee corner: counter, machine, mugs, a tiny fridge.
+	box("Counter", 22, y, 0.2, 28.8, y + 3, 2.2, walnutDark)
+	box("CounterTop", 21.9, y + 3, 0.2, 28.9, y + 3.2, 2.3, { Color = Color3.fromRGB(40, 42, 48), Material = Enum.Material.Granite })
+	box("Fridge", 26.4, y + 0.1, 2.2, 28.6, y + 2.8, 2.25, { Color = Color3.fromRGB(220, 220, 215), Material = METAL })
+	box("Espresso", 22.6, y + 3.2, 0.6, 24, y + 4.8, 1.8, { Color = Color3.fromRGB(150, 150, 155), Material = METAL })
+	box("EspressoSpout", 22.9, y + 3.9, 1.8, 23.7, y + 4.1, 2.1, { Color = DARK, Material = METAL })
+	for k = 0, 2 do
+		cyl("Mug", 24.8 + k * 0.6, y + 3.2, 1.4, 0.2, 0.45, { Color = ({ WHITE, ORANGE, Color3.fromRGB(60, 110, 70) })[k + 1] })
+	end
+	local clock = cyl("Clock", 0, 0, 0, 0.7, 0.1, { Color = WHITE })
+	if clock then
+		clock.CFrame = cf(28.95, y + 9.2, 35) * CFrame.Angles(0, 0, 0)
+		sign(clock, "16:40\nARES", Enum.NormalId.Left, DARK, Enum.Font.Code)
+	end
+
+	-- Lounge corner: couch with pillows and Peri's green cardigan, coffee
+	-- table, floor lamp, side table.
+	local couch = { Color = Color3.fromRGB(150, 135, 120), Material = Enum.Material.Fabric }
+	box("CouchBase", 0.4, y + 0.3, 24, 3.6, y + 1.6, 34, couch)
+	box("CouchBack", 0.4, y + 1.6, 24, 1.3, y + 4, 34, couch)
+	box("CouchArm", 0.4, y + 0.3, 23.3, 3.6, y + 2.8, 24, couch)
+	box("CouchArm", 0.4, y + 0.3, 34, 3.6, y + 2.8, 34.7, couch)
+	for _, z in { 24.1, 27.4, 30.7 } do
+		box("Cushion", 1.3, y + 1.6, z, 3.6, y + 2, z + 3.2, { Color = Color3.fromRGB(165, 150, 134), Material = Enum.Material.Fabric })
+	end
+	for _, f in { { 1.3, 24.8 }, { 1.3, 33.2 } } do
+		local pillow = B.part(folder, "Pillow", Vector3.new(0.5, 1.3, 1.3), cf(f[1] + 0.3, y + 2.6, f[2]) * CFrame.Angles(math.rad(10), 0, math.rad(-12)),
+			{ Color = Color3.fromRGB(200, 120, 70), Material = Enum.Material.Fabric })
+		_ = pillow
+	end
+	for k = 0, 3 do
+		box("CouchFoot", 0.6 + (k % 2) * 2.6, y, 24.2 + math.floor(k / 2) * 9.4, 0.9 + (k % 2) * 2.6, y + 0.3, 24.5 + math.floor(k / 2) * 9.4, walnutDark)
+	end
+	-- The cardigan: draped over the back of the couch, one sleeve hanging down
+	-- the front, buttons on the open front.
+	local cardigan = { Color = Color3.fromRGB(70, 115, 72), Material = Enum.Material.Fabric }
+	box("Cardigan", 0.3, y + 4, 28.6, 1.45, y + 4.25, 31.2, cardigan)
+	box("Cardigan", 1.3, y + 2.2, 28.7, 1.45, y + 4.1, 31.1, cardigan)
+	box("Cardigan", 1.45, y + 2, 28.9, 2.9, y + 2.12, 31, cardigan)
+	box("CardiganSleeve", 2.9, y + 1.95, 31.05, 3.7, y + 2.1, 31.6, cardigan)
+	box("CardiganSleeve", 3.62, y + 0.6, 31.1, 3.85, y + 1.95, 31.55, cardigan)
+	box("CardiganCuff", 3.62, y + 0.42, 31.1, 3.87, y + 0.62, 31.55, { Color = Color3.fromRGB(56, 95, 58), Material = Enum.Material.Fabric })
+	box("CardiganHem", 1.45, y + 2.12, 28.9, 2.9, y + 2.16, 29.15, { Color = Color3.fromRGB(56, 95, 58), Material = Enum.Material.Fabric })
+	for k = 0, 3 do
+		ball("Button", 1.5 + k * 0.4, y + 2.16, 29.4, 0.12, { Color = Color3.fromRGB(200, 180, 140) })
+	end
+	-- Coffee table with a couple of books and a tablet.
+	box("CoffeeTable", 5.5, y + 1.3, 26.5, 9, y + 1.5, 31.5, walnut)
 	for _, p in { { 5.7, 26.7 }, { 8.6, 26.7 }, { 5.7, 31.1 }, { 8.6, 31.1 } } do
-		box("TableLeg", p[1], y, p[2], p[1] + 0.2, y + 1.3, p[2] + 0.2, { Color = STEEL, Material = METAL })
+		box("TableLeg", p[1], y, p[2], p[1] + 0.2, y + 1.3, p[2] + 0.2, walnutDark)
 	end
-	cyl("Planter", 2.5, y, 37, 0.9, 1.8, { Color = DARK })
-	ball("Plant", 2.5, y + 3, 37, 2.4, { Color = Color3.fromRGB(70, 120, 60), Material = Enum.Material.Grass })
-	cyl("Planter", 27.5, y, 2, 0.8, 1.6, { Color = DARK })
-	ball("Plant", 27.5, y + 2.6, 2, 2, { Color = Color3.fromRGB(70, 120, 60), Material = Enum.Material.Grass })
+	box("Book", 6, y + 1.5, 27.2, 7.4, y + 1.7, 29, { Color = Color3.fromRGB(40, 70, 120) })
+	box("Book", 6.1, y + 1.7, 27.4, 7.2, y + 1.85, 28.8, { Color = Color3.fromRGB(200, 170, 90) })
+	box("Tablet", 7.6, y + 1.5, 29.6, 8.6, y + 1.56, 31, { Color = DARK })
+	cyl("Mug", 8.2, y + 1.5, 27.4, 0.2, 0.45, { Color = Color3.fromRGB(60, 110, 70) })
+	-- Floor lamp and side table.
+	cyl("FloorLampBase", 2, y, 36.2, 0.6, 0.15, { Color = DARK, Material = METAL })
+	box("FloorLampPole", 1.95, y + 0.15, 36.15, 2.05, y + 6, 36.25, { Color = DARK, Material = METAL })
+	local fshade = cyl("FloorLampShade", 2, y + 5.6, 36.2, 0.9, 1, { Color = Color3.fromRGB(240, 225, 200), Material = Enum.Material.Fabric })
+	glow(fshade, WARM, 14, 0.6)
+	cyl("SideTable", 2, y, 22.2, 0.8, 1.8, walnutDark)
+	cyl("Pot", 2, y + 1.8, 22.2, 0.35, 0.5, { Color = WHITE })
+	ball("Succulent", 2, y + 2.5, 22.2, 0.7, { Color = Color3.fromRGB(80, 140, 90), Material = Enum.Material.Grass })
 
 	-- Display case with a model of the S.S. Totality.
 	box("Pedestal", 10, y, 33, 13, y + 3.4, 36, { Color = WHITE, Material = SMOOTH })
@@ -858,23 +1012,32 @@ local function office()
 	box("ShipHull", 10.6, y + 4.4, 34.2, 12.4, y + 4.9, 34.8, { Color = Color3.fromRGB(220, 222, 228), Material = METAL })
 	box("ShipRing", 11.3, y + 4, 33.7, 11.5, y + 5.3, 35.3, { Color = STEEL, Material = METAL })
 	box("ShipSail", 10.4, y + 4.62, 33.4, 10.6, y + 4.68, 35.6, { Color = Color3.fromRGB(230, 170, 60), Material = METAL })
+	local caseLight = box("CaseLight", 11, y + 6.1, 34, 12, y + 6.15, 35, { Color = COOL, Material = NEON })
+	glow(caseLight, COOL, 5, 0.6)
 	local tag = box("CaseTag", 10.5, y + 2.4, 36, 12.5, y + 3, 36.05, { Color = DARK })
 	sign(tag, "S.S. TOTALITY · 1:400", Enum.NormalId.Back, AMBER)
 
-	-- Filing cabinets and wall art.
-	for i = 0, 1 do
-		box("Cabinet", 22 + i * 2.2, y, 0, 24 + i * 2.2, y + 4.4, 1.8, { Color = STEEL, Material = METAL })
-		for d = 0, 2 do
-			box("Drawer", 22.2 + i * 2.2, y + 0.4 + d * 1.4, 1.8, 23.8 + i * 2.2, y + 1.6 + d * 1.4, 1.85, { Color = Color3.fromRGB(120, 124, 130), Material = METAL })
-		end
+	-- Tall plants in the corners, art on the walls.
+	for _, p in { { 1.6, 1.8 }, { 27.2, 37 } } do
+		cyl("Planter", p[1], y, p[2], 0.9, 1.8, { Color = Color3.fromRGB(60, 60, 64), Material = SMOOTH })
+		box("PlantStem", p[1] - 0.08, y + 1.8, p[2] - 0.08, p[1] + 0.08, y + 4.6, p[2] + 0.08, { Color = Color3.fromRGB(90, 70, 50) })
+		ball("Plant", p[1], y + 5, p[2], 2.6, { Color = Color3.fromRGB(70, 120, 60), Material = Enum.Material.Grass })
+		ball("Plant", p[1] + 0.5, y + 4, p[2] - 0.3, 1.6, { Color = Color3.fromRGB(80, 135, 66), Material = Enum.Material.Grass })
 	end
-	local art = box("Painting", 10, y + 4, 38.4, 20, y + 9, 38.6, { Color = Color3.fromRGB(190, 100, 60) })
-	sign(art, "SOLSTICE SOLUTIONS\nreach for the sun", Enum.NormalId.Front, Color3.fromRGB(255, 230, 200), Enum.Font.Garamond)
+	box("PaintingFrame", 0, y + 3.3, 31.2, 0.05, y + 7.2, 37.8, { Color = Color3.fromRGB(200, 165, 90), Material = METAL })
+	local art = box("Painting", 0.05, y + 3.5, 31.4, 0.1, y + 7, 37.6, { Color = Color3.fromRGB(190, 100, 60) })
+	sign(art, "SOLSTICE SOLUTIONS\nreach for the sun", Enum.NormalId.Right, Color3.fromRGB(255, 230, 200), Enum.Font.Garamond)
+	-- Venetian blinds, half down, on the outside windows.
+	for k = 0, 6 do
+		local by = y + 9 - k * 0.32
+		box("Blind", 0.25, by, 8.8, 0.3, by + 0.22, 30.4, { Color = Color3.fromRGB(235, 232, 225) })
+		box("Blind", 4.2, by, 38.3, 23.8, by + 0.22, 38.35, { Color = Color3.fromRGB(235, 232, 225) })
+	end
 end
 
 -- Atrium centrepiece and lobby furniture --------------------------------------------
 local function atrium()
-	local cx, cz = 57, 26
+	local cx, cz = 50, 22
 	-- Floor inlay rings under the orrery.
 	for i, r in { 9, 7.6, 4.8 } do
 		cyl("InlayRing", cx, 0.1, cz, r, 0.02 + i * 0.01, { Color = if i == 2 then FLOOR else (if i == 1 then INLAY else ORANGE), CanCollide = false })
@@ -979,7 +1142,7 @@ local function atrium()
 	sign(cs, "RED DUST ROAST", Enum.NormalId.Front, AMBER)
 
 	-- Pendant lights hanging into the atrium.
-	for _, p in { { 38, 8 }, { 48, 5 }, { 64, 5 }, { 40, 33 }, { 74, 34 }, { 47, 38 }, { 67, 38 } } do
+	for _, p in { { 38, 8 }, { 48, 5 }, { 64, 5 }, { 36, 34 }, { 74, 34 }, { 47, 38 }, { 67, 38 } } do
 		box("PendantCable", p[1] - 0.04, 18, p[2] - 0.04, p[1] + 0.04, H2, p[2] + 0.04, { Color = DARK, CanCollide = false })
 		cyl("PendantShade", p[1], 17, p[2], 1.2, 1, { Color = DARK, Material = METAL, CanCollide = false })
 		local bulb = ball("Lamp", p[1], 16.9, p[2], 0.9, { Color = WARM, Material = NEON, CanCollide = false })
