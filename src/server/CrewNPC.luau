@@ -1,13 +1,13 @@
 --[[
-	Builds the cutscene crew NPC from marketplace items.
+	Builds the cutscene characters (Aphe, Peri...) from marketplace items.
 
-	Put item IDs in OUTFIT (shirts, pants, faces, hats, hair, layered clothing,
-	body parts...) and bundle IDs in BUNDLES. Each ID's type is looked up from
-	the marketplace when the game starts, so the list doesn't need labels.
-	Items don't need to be owned.
+	Each character in CHARACTERS lists item IDs (shirts, pants, faces, hair,
+	accessories, layered clothing...) and bundle IDs (heads, animation packs).
+	Each ID's type is looked up from the marketplace when the game starts, so
+	the lists don't need labels. Items don't need to be owned.
 
-	If a Model named Aphe is in ServerStorage (e.g. one copied out of a
-	play test and edited by hand), that model is used instead.
+	If a Model with the character's name is in ServerStorage (e.g. one copied
+	out of a play test and edited by hand), that model is used instead.
 ]]
 
 local AssetService = game:GetService("AssetService")
@@ -17,14 +17,8 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local CrewNPC = {}
 
-local OUTFIT = {
-	5872051960,
-	109186498,
-	81189970542394,
-	127809511173598,
-}
-
--- Body parts set directly (0 = default). Applied after the outfit and bundles, so these win.
+-- Same body part meshes for every character (0 = default). Applied after the
+-- outfit and bundles, so these win.
 local BODY_PARTS = {
 	Torso = 86499666,
 	LeftArm = 86499716,
@@ -33,13 +27,35 @@ local BODY_PARTS = {
 	RightLeg = 0,
 }
 
-local SKIN_COLOR = Color3.fromRGB(206, 171, 236)
-local ARM_COLOR = Color3.fromRGB(0, 0, 0)
-
-local BUNDLES = {
-	3209000400683, -- animation pack
-	37662765657058, -- head
+--[[
+	One entry per character:
+	  outfit   item IDs (clothes, faces, hair, accessories...)
+	  bundles  bundle IDs (heads, animation packs...)
+	  skin     skin colour
+	  arms     optional arm colour (defaults to skin)
+]]
+local CHARACTERS = {
+	Aphe = {
+		outfit = { 5872051960, 109186498, 81189970542394, 127809511173598 },
+		bundles = {
+			3209000400683, -- animation pack
+			37662765657058, -- head
+		},
+		skin = Color3.fromRGB(206, 171, 236),
+		arms = Color3.fromRGB(0, 0, 0),
+	},
+	Peri = {
+		outfit = {
+			16463892433, 18320597179, -- hair (both worn)
+			14217638297, 93743599009564, -- face
+		},
+		bundles = {
+			110997625219077, -- head
+		},
+		skin = Color3.fromRGB(189, 154, 121),
+	},
 }
+CrewNPC.Names = { "Aphe", "Peri" }
 
 -- Marketplace AssetTypeId -> HumanoidDescription property.
 local PROPERTY = {
@@ -64,19 +80,22 @@ local LAYERED = {
 	[72] = Enum.AccessoryType.DressSkirt, [76] = Enum.AccessoryType.Eyebrow, [77] = Enum.AccessoryType.Eyelash,
 }
 
-local cached: HumanoidDescription? = nil
+local cached: { [string]: HumanoidDescription } = {}
 
 local function addAsset(desc: HumanoidDescription, layered: { any }, id: number, typeId: number?)
 	if not typeId then
 		local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, id, Enum.InfoType.Asset)
 		if not ok then
-			warn(`[Totality] CrewNPC: couldn't look up item {id}: {info}`)
+			warn(`[Totality] Character: couldn't look up item {id}: {info}`)
 			return
 		end
 		typeId = info.AssetTypeId
 	end
 	local prop, acc, layer = PROPERTY[typeId], ACCESSORY[typeId], LAYERED[typeId]
 	if prop then
+		if prop == "Face" and desc.Face ~= 0 then
+			warn(`[Totality] Character: two classic faces ({desc.Face} and {id}); only {id} can show`)
+		end
 		(desc :: any)[prop] = id
 	elseif acc then
 		local current = (desc :: any)[acc]
@@ -88,16 +107,17 @@ local function addAsset(desc: HumanoidDescription, layered: { any }, id: number,
 	end
 end
 
-function CrewNPC.GetDescription(): HumanoidDescription
-	if cached then
-		return cached:Clone()
+function CrewNPC.GetDescription(name: string): HumanoidDescription
+	if cached[name] then
+		return cached[name]:Clone()
 	end
+	local def = assert(CHARACTERS[name], `No character named {name}`)
 	local desc = Instance.new("HumanoidDescription")
 	local layered = {}
-	for _, id in OUTFIT do
+	for _, id in def.outfit do
 		addAsset(desc, layered, id)
 	end
-	for _, bundleId in BUNDLES do
+	for _, bundleId in def.bundles do
 		local ok, details = pcall(AssetService.GetBundleDetailsAsync, AssetService, bundleId)
 		if ok then
 			for _, item in details.Items do
@@ -106,30 +126,31 @@ function CrewNPC.GetDescription(): HumanoidDescription
 				end
 			end
 		else
-			warn(`[Totality] CrewNPC: couldn't load bundle {bundleId}: {details}`)
+			warn(`[Totality] {name}: couldn't load bundle {bundleId}: {details}`)
 		end
 	end
 	for part, id in BODY_PARTS do
 		(desc :: any)[part] = id
 	end
 	for _, prop in { "HeadColor", "TorsoColor", "LeftLegColor", "RightLegColor" } do
-		(desc :: any)[prop] = SKIN_COLOR
+		(desc :: any)[prop] = def.skin
 	end
-	desc.LeftArmColor = ARM_COLOR
-	desc.RightArmColor = ARM_COLOR
+	desc.LeftArmColor = def.arms or def.skin
+	desc.RightArmColor = def.arms or def.skin
 	if #layered > 0 then
 		desc:SetAccessories(layered, true)
 	end
-	cached = desc
+	cached[name] = desc
 	return desc:Clone()
 end
 
--- Creates a dressed, anchored NPC standing at `cframe` (feet on the ground).
-function CrewNPC.Spawn(cframe: CFrame, parent: Instance?): Model
-	local saved = ServerStorage:FindFirstChild("Aphe")
+-- Creates a dressed, anchored character standing at `cframe` (feet on the ground).
+-- A Model with the same name in ServerStorage is used instead when there is one.
+function CrewNPC.Spawn(name: string, cframe: CFrame, parent: Instance?): Model
+	local saved = ServerStorage:FindFirstChild(name)
 	local npc = if saved and saved:IsA("Model") then saved:Clone()
-		else Players:CreateHumanoidModelFromDescription(CrewNPC.GetDescription(), Enum.HumanoidRigType.R15)
-	npc.Name = "Aphe"
+		else Players:CreateHumanoidModelFromDescription(CrewNPC.GetDescription(name), Enum.HumanoidRigType.R15)
+	npc.Name = name
 	local humanoid = npc:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	local root = npc:FindFirstChild("HumanoidRootPart") :: BasePart
