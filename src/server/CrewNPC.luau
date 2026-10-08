@@ -5,11 +5,15 @@
 	body parts...) and bundle IDs in BUNDLES. Each ID's type is looked up from
 	the marketplace when the game starts, so the list doesn't need labels.
 	Items don't need to be owned.
+
+	If a Model named CrewNPC is in ServerStorage (e.g. one copied out of a
+	play test and edited by hand), that model is used instead.
 ]]
 
 local AssetService = game:GetService("AssetService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
 
 local CrewNPC = {}
 
@@ -102,7 +106,9 @@ end
 
 -- Creates a dressed, anchored NPC standing at `cframe` (feet on the ground).
 function CrewNPC.Spawn(cframe: CFrame, parent: Instance?): Model
-	local npc = Players:CreateHumanoidModelFromDescription(CrewNPC.GetDescription(), Enum.HumanoidRigType.R15)
+	local saved = ServerStorage:FindFirstChild("CrewNPC")
+	local npc = if saved and saved:IsA("Model") then saved:Clone()
+		else Players:CreateHumanoidModelFromDescription(CrewNPC.GetDescription(), Enum.HumanoidRigType.R15)
 	npc.Name = "CrewNPC"
 	local humanoid = npc:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None

@@ -19,7 +19,8 @@ if Config.SHOWCASE then
 	showcaseSpawn = Showcase.Build()
 else
 	RoomGenerator.Start(Config.SEED)
-	if Config.PREVIEW_NPC then
+	-- Skipped when a CrewNPC is already placed in the Workspace by hand.
+	if Config.PREVIEW_NPC and not workspace:FindFirstChild("CrewNPC") then
 		-- Stands a few studs in front of where players spawn, facing them.
 		task.spawn(function()
 			local room1 = workspace:WaitForChild("GeneratedRooms"):WaitForChild("Room1", 10)
