@@ -63,6 +63,19 @@ local function room1Spawn(): CFrame?
 	return spawnPoint and spawnPoint.CFrame
 end
 
+-- Third person in the lobby, locked first person on the ship.
+local function setLobbyCamera(player: Player, inLobby: boolean)
+	if inLobby then
+		player.CameraMode = Enum.CameraMode.Classic
+		player.CameraMinZoomDistance = 6
+		player.CameraMaxZoomDistance = 24
+	else
+		player.CameraMinZoomDistance = 0.5
+		player.CameraMaxZoomDistance = 0.5
+		player.CameraMode = Enum.CameraMode.LockFirstPerson
+	end
+end
+
 local showcaseSpawn: CFrame? = nil
 local lobbySpawn: CFrame? = nil
 if Config.SHOWCASE then
@@ -75,6 +88,7 @@ elseif Config.LOBBY then
 		local target = room1Spawn()
 		for _, player in crew do
 			player:SetAttribute("InLobby", false)
+			setLobbyCamera(player, false)
 			local character = player.Character
 			if target and character then
 				character:PivotTo(target)
@@ -126,6 +140,7 @@ local function onPlayer(player: Player)
 	player.CameraMode = Enum.CameraMode.LockFirstPerson
 	if lobbySpawn then
 		player:SetAttribute("InLobby", true)
+		setLobbyCamera(player, true)
 	end
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then
