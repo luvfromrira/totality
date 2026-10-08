@@ -47,7 +47,6 @@ local CHARACTERS = {
 	Peri = {
 		outfit = {
 			16463892433, 18320597179, -- hair (both worn)
-			14217638297, 93743599009564, -- face
 			13518201885, -- shirt
 			13518205713, -- pants
 		},
@@ -55,6 +54,8 @@ local CHARACTERS = {
 			110997625219077, -- head
 		},
 		skin = Color3.fromRGB(189, 154, 121),
+		-- Always built fresh from this list; a saved copy in ServerStorage is ignored.
+		ignoreSaved = true,
 	},
 }
 CrewNPC.Names = { "Aphe", "Peri" }
@@ -149,7 +150,8 @@ end
 -- Creates a dressed, anchored character standing at `cframe` (feet on the ground).
 -- A Model with the same name in ServerStorage is used instead when there is one.
 function CrewNPC.Spawn(name: string, cframe: CFrame, parent: Instance?): Model
-	local saved = ServerStorage:FindFirstChild(name)
+	local def = CHARACTERS[name]
+	local saved = if def and def.ignoreSaved then nil else ServerStorage:FindFirstChild(name)
 	local npc = if saved and saved:IsA("Model") then saved:Clone()
 		else Players:CreateHumanoidModelFromDescription(CrewNPC.GetDescription(name), Enum.HumanoidRigType.R15)
 	npc.Name = name
