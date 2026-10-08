@@ -145,6 +145,13 @@ local function animate(peri: Model, file: Model?)
 	print(`[Totality] Animating Peri ({count} joints)`)
 	local chest = peri:FindFirstChild("UpperTorso", true) :: BasePart?
 	local fileRest = file and file:GetPivot()
+	-- Where the middle of the file is relative to its pivot (the pivot can be
+	-- at a corner, which made it hang off to one side).
+	local centerOffset = Vector3.zero
+	if file and fileRest then
+		local box = file:GetBoundingBox()
+		centerOffset = fileRest:PointToObjectSpace(box.Position)
+	end
 	local clock = math.random() * LENGTH
 	local connection
 	connection = RunService.Stepped:Connect(function(_, dt)
@@ -191,9 +198,9 @@ local function animate(peri: Model, file: Model?)
 				-- the cabinet, turned to face him and tipped up toward his face.
 				local look = chest.CFrame.LookVector * Vector3.new(1, 0, 1)
 				local facing = CFrame.lookAt(Vector3.zero, if look.Magnitude > 0.01 then look.Unit else Vector3.zAxis)
-				local spot = chest.CFrame * CFrame.new(-0.15, -0.2, -1.2)
-				local flat = facing:Inverse() * fileRest.Rotation
-				file:PivotTo(CFrame.new(spot.Position) * facing * CFrame.Angles(math.rad(40), 0, 0) * flat)
+				local center = (chest.CFrame * CFrame.new(0, 0.45, -1.3)).Position
+				local rot = facing * CFrame.Angles(math.rad(40), 0, 0) * facing:Inverse() * fileRest.Rotation
+				file:PivotTo(CFrame.new(center - rot:VectorToWorldSpace(centerOffset)) * rot)
 			else
 				file:PivotTo(fileRest)
 			end
