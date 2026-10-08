@@ -6,7 +6,7 @@
 	the marketplace when the game starts, so the list doesn't need labels.
 	Items don't need to be owned.
 
-	If a Model named CrewNPC is in ServerStorage (e.g. one copied out of a
+	If a Model named Aphe is in ServerStorage (e.g. one copied out of a
 	play test and edited by hand), that model is used instead.
 ]]
 
@@ -123,10 +123,10 @@ end
 
 -- Creates a dressed, anchored NPC standing at `cframe` (feet on the ground).
 function CrewNPC.Spawn(cframe: CFrame, parent: Instance?): Model
-	local saved = ServerStorage:FindFirstChild("CrewNPC")
+	local saved = ServerStorage:FindFirstChild("Aphe")
 	local npc = if saved and saved:IsA("Model") then saved:Clone()
 		else Players:CreateHumanoidModelFromDescription(CrewNPC.GetDescription(), Enum.HumanoidRigType.R15)
-	npc.Name = "CrewNPC"
+	npc.Name = "Aphe"
 	local humanoid = npc:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	local root = npc:FindFirstChild("HumanoidRootPart") :: BasePart
