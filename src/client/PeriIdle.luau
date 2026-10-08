@@ -104,11 +104,10 @@ end
 
 local function animate(peri: Model, file: Model?)
 	local joints: { [string]: Motor6D } = {}
-	local root = peri:FindFirstChild("HumanoidRootPart")
-	for _, d in peri:GetDescendants() do
+	local function adopt(d: Instance)
 		if d:IsA("Motor6D") then
 			joints[d.Name] = d
-		elseif d:IsA("BasePart") and d ~= root then
+		elseif d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" then
 			-- Joints can't move anchored parts; only the root holds him in place.
 			d.Anchored = false
 		elseif d:IsA("Animator") then
@@ -117,13 +116,23 @@ local function animate(peri: Model, file: Model?)
 			d:Destroy()
 		end
 	end
+	-- His parts can reach this client a little after the model itself (and
+	-- stream in and out), so keep picking joints up as they arrive.
+	for _, d in peri:GetDescendants() do
+		adopt(d)
+	end
+	peri.DescendantAdded:Connect(adopt)
+	local waited = 0
+	while next(joints) == nil and waited < 20 do
+		waited += task.wait(0.5)
+	end
+	if next(joints) == nil then
+		warn("[Totality] Peri has no Motor6D joints, so he can't be animated")
+		return
+	end
 	local count = 0
 	for _ in joints do
 		count += 1
-	end
-	if count == 0 then
-		warn("[Totality] Peri has no Motor6D joints, so he can't be animated")
-		return
 	end
 	print(`[Totality] Animating Peri ({count} joints)`)
 	local leftHand = peri:FindFirstChild("LeftHand", true) :: BasePart?
@@ -141,6 +150,9 @@ local function animate(peri: Model, file: Model?)
 		local breath = math.sin(now * 1.6)
 		local sway = math.sin(now * 0.35)
 		for name, motor in joints do
+			if not motor.Parent then
+				continue
+			end
 			local r = pose(name)
 			local extra = CFrame.identity
 			if name == "Waist" then
