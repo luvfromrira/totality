@@ -1512,6 +1512,14 @@ function Lobby.Build(): CFrame
 		local at = if top then top.CFrame * CFrame.new(0, top.Size.Y / 2, top.Size.Z / 2 - 0.9) else cf(28.1, H1 + 2.6, 24.2)
 		local file = Research.Prop(CFrame.new(at.Position) * CFrame.Angles(0, math.rad(80), 0), Random.new(9))
 		file.Name = "PeriFile"
+		-- Keep it hand-sized (a big custom ResearchModel would swamp him).
+		local _, size = file:GetBoundingBox()
+		local biggest = math.max(size.X, size.Z)
+		if biggest > 1.6 then
+			file:ScaleTo(file:GetScale() * 1.6 / biggest)
+			local box, newSize = file:GetBoundingBox()
+			file:PivotTo(file:GetPivot() + Vector3.new(0, at.Position.Y - (box.Position.Y - newSize.Y / 2), 0))
+		end
 		file.Parent = folder
 	end
 
@@ -1520,7 +1528,11 @@ function Lobby.Build(): CFrame
 	-- one (see CrewNPC). He stands by the window, a couple of studs clear of
 	-- the desk, next to the credenza with his research file.
 	task.spawn(function()
-		local at = pos(27.6, H1, 26.6)
+		-- Stand him just to the side of his file, so it's within arm's reach
+		-- on his left.
+		local file = folder:FindFirstChild("PeriFile", true) :: Model?
+		local fileZ = if file then O:PointToObjectSpace(file:GetPivot().Position).Z else 24.2
+		local at = pos(27.6, H1, fileZ + 2)
 		local spot = CFrame.lookAt(at, at + O.RightVector)
 		local existing = folder:FindFirstChild("Peri", true)
 		if existing then

@@ -144,6 +144,7 @@ local function animate(peri: Model, file: Model?)
 	end
 	print(`[Totality] Animating Peri ({count} joints)`)
 	local leftHand = peri:FindFirstChild("LeftHand", true) :: BasePart?
+	local chest = peri:FindFirstChild("UpperTorso", true) :: BasePart?
 	local fileRest = file and file:GetPivot()
 	local clock = math.random() * LENGTH
 	local connection
@@ -186,9 +187,13 @@ local function animate(peri: Model, file: Model?)
 			motor.Transform = CFrame.Angles(math.rad(r.X), math.rad(r.Y), math.rad(r.Z)) * extra
 		end
 		if file and fileRest then
-			if holding and leftHand then
-				-- In his hand, tilted toward his face to read.
-				file:PivotTo(leftHand.CFrame * CFrame.new(0.35, -0.15, -0.5) * CFrame.Angles(math.rad(-70), math.rad(90), 0))
+			if holding and leftHand and chest then
+				-- Held out in front of his chest, tilted up toward his face. While
+				-- it's still low (just picked up / being put down) it follows his hand.
+				local reading = chest.CFrame * CFrame.new(0, 0.1, -1.3) * CFrame.Angles(math.rad(55), 0, 0)
+				local hand = leftHand.CFrame * CFrame.new(0, -0.15, 0)
+				local up = math.clamp((leftHand.Position.Y - (chest.Position.Y - 1.6)) / 1.2, 0, 1)
+				file:PivotTo(hand:Lerp(reading, up))
 			else
 				file:PivotTo(fileRest)
 			end
