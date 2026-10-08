@@ -9,6 +9,7 @@ local Footsteps = require(script.Footsteps)
 local Sprint = require(script.Sprint)
 local PromptOutline = require(script.PromptOutline)
 local Spin = require(script.Spin)
+local PeriIdle = require(script.PeriIdle)
 
 task.spawn(Flicker.Start)
 task.spawn(Ambience.Start)
@@ -16,6 +17,7 @@ task.spawn(Footsteps.Start)
 task.spawn(Sprint.Start)
 task.spawn(PromptOutline.Start)
 task.spawn(Spin.Start)
+task.spawn(PeriIdle.Start)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"

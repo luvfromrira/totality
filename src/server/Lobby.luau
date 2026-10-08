@@ -963,8 +963,13 @@ local function office()
 	ball("MarsGlobe", 28.15, y + 3.75, 11, 1.2, { Color = Color3.fromRGB(190, 90, 55), Material = SMOOTH })
 	box("Award", 27.9, y + 2.6, 15.6, 28.4, y + 3.9, 16.2, { Color = Color3.fromRGB(180, 210, 230), Material = Enum.Material.Glass, Transparency = 0.2 })
 	box("AwardBase", 27.85, y + 2.6, 15.5, 28.45, y + 2.8, 16.3, walnutDark)
-	cyl("Pot", 28.15, y + 2.6, 21, 0.45, 0.6, { Color = WHITE })
-	ball("Succulent", 28.15, y + 3.4, 21, 0.9, { Color = Color3.fromRGB(80, 140, 90), Material = Enum.Material.Grass })
+	cyl("Pot", 28.15, y + 2.6, 19, 0.45, 0.6, { Color = WHITE })
+	ball("Succulent", 28.15, y + 3.4, 19, 0.9, { Color = Color3.fromRGB(80, 140, 90), Material = Enum.Material.Grass })
+	-- A research file on the credenza by the window. Peri picks it up and
+	-- reads it now and then (client/PeriIdle.luau animates that).
+	local file = Research.Prop(cf(28.1, y + 2.62, 22.1) * CFrame.Angles(0, math.rad(80), 0), Random.new(9))
+	file.Name = "PeriFile"
+	file.Parent = folder
 
 	-- Built-in bookshelf along the north wall: books, boxes, a few keepsakes.
 	box("ShelfSide", 3, y, 0.2, 3.3, y + 8.6, 2, walnutDark)
