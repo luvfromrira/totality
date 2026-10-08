@@ -48,6 +48,8 @@ local CHARACTERS = {
 		outfit = {
 			16463892433, 18320597179, -- hair (both worn)
 			14217638297, 93743599009564, -- face
+			13518201885, -- shirt
+			13518205713, -- pants
 		},
 		bundles = {
 			110997625219077, -- head
