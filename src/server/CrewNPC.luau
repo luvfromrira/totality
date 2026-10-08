@@ -22,11 +22,11 @@ local OUTFIT = {
 	109186498,
 	81189970542394,
 	127809511173598,
-	37662765657058,
 }
 
 local BUNDLES = {
 	3209000400683, -- animation pack
+	37662765657058, -- not a plain item (404 as an asset), most likely a head bundle
 }
 
 -- Marketplace AssetTypeId -> HumanoidDescription property.
