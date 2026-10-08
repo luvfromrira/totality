@@ -172,6 +172,26 @@ function CrewNPC.Spawn(name: string, cframe: CFrame, parent: Instance?): Model
 	end
 	local humanoid = npc:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	-- A saved copy can lose its joints while being edited (they'd be replaced
+	-- by welds, or deleted). Rebuild them from the body's rig attachments so
+	-- the character can still be animated.
+	if not npc:FindFirstChildWhichIsA("Motor6D", true) then
+		for _, d in npc:GetDescendants() do
+			-- Only welds between two body parts; ones holding accessories stay.
+			if d:IsA("Weld") or d:IsA("WeldConstraint") then
+				local a, b = (d :: any).Part0, (d :: any).Part1
+				local function isBody(p: Instance?): boolean
+					return p ~= nil and p.Parent == npc
+				end
+				if isBody(a) and isBody(b) then
+					d:Destroy()
+				end
+			end
+		end
+		local ok, err = pcall(humanoid.BuildRigFromAttachments, humanoid)
+		local rebuilt = npc:FindFirstChildWhichIsA("Motor6D", true) ~= nil
+		print(`[Totality] {name} had no joints; rebuilt them: {if ok and rebuilt then "ok" else tostring(err or "no rig attachments found")}`)
+	end
 	local root = npc:FindFirstChild("HumanoidRootPart") :: BasePart
 	-- Only the root is anchored, so the joints can still move (idle animations).
 	for _, d in npc:GetDescendants() do

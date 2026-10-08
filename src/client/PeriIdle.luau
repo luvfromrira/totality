@@ -123,12 +123,14 @@ local function animate(peri: Model, file: Model?)
 	end
 	peri.DescendantAdded:Connect(adopt)
 	local waited = 0
-	while next(joints) == nil and waited < 20 do
+	while next(joints) == nil and waited < 20 and peri.Parent do
 		waited += task.wait(0.5)
 	end
 	if next(joints) == nil then
-		warn("[Totality] Peri has no Motor6D joints, so he can't be animated")
-		return
+		if peri.Parent then
+			warn("[Totality] Peri has no Motor6D joints, so he can't be animated")
+		end
+		return -- (or this was an old copy the server swapped out)
 	end
 	local count = 0
 	for _ in joints do
