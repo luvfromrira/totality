@@ -247,7 +247,7 @@ local function buildShell()
 	end
 	-- North (back) wall: clerestory windows high over the atrium.
 	-- The pods sit in an annex behind it, their doorways flush with the wall.
-	solid("Wall", 0, 0, 98, 0, { { 32, 74, 22, 30 }, { 30.6, 77, 0, 12.6 } })
+	solid("Wall", 0, 0, 98, 0, { { 32, 97, 22, 30 }, { 30.6, 77, 0, 12.6 } })
 	-- West wall: EVA airlock from the locker room, office window.
 	solid("Wall", 0, 38.6, 0, 0, { { 24.6, 29.6, PLAT, PLAT + 8 }, { 8, 30, 16, 23 } })
 	-- South-west wall along the hallway: window band on both floors.
@@ -255,11 +255,11 @@ local function buildShell()
 
 	-- Glass fill and frames for those openings.
 	local glassProps = { Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.7, CanCollide = true }
-	box("Glass", 32, 22, -0.6, 74, 30, -0.4, glassProps)
+	box("Glass", 32, 22, -0.6, 97, 30, -0.4, glassProps)
 	box("Glass", -0.6, 16, 8.6, -0.4, 23, 30.6, glassProps)
 	box("Glass", 3, 5, 38.9, 25, 11, 39.1, glassProps)
 	box("Glass", 4, 16, 38.9, 24, 23, 39.1, glassProps)
-	for x = 32, 74, 6 do
+	for x = 32, 97, 6.5 do
 		box("Mullion", x - 0.2, 22, -0.8, x + 0.2, 30, -0.1, { Color = DARK, Material = METAL })
 	end
 	for z = 8.6, 30.6, 5.5 do
