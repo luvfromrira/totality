@@ -166,6 +166,22 @@ local function trySpot(room: Model, origin: Vector3, rayParams: RaycastParams, o
 	return CFrame.new(hit.Position)
 end
 
+-- A decorative copy of the research item (no glow, can't be collected), lying
+-- on the surface at `cframe`. Used for props like the folder on Peri's desk.
+function Research.Prop(cframe: CFrame, rng: Random): Model
+	local template = ServerStorage:FindFirstChild("ResearchModel")
+	local model = if template and template:IsA("Model") and template:FindFirstChildWhichIsA("BasePart", true)
+		then cloneCustom(template, cframe)
+		else buildFolder(cframe, rng)
+	model.Name = "ResearchProp"
+	for _, d in model:GetDescendants() do
+		if d:IsA("Light") or d:IsA("ProximityPrompt") then
+			d:Destroy()
+		end
+	end
+	return model
+end
+
 function Research.PopulateRoom(room: Model, rng: Random)
 	if (room:GetAttribute("RoomNumber") or 0) <= 1 then
 		return

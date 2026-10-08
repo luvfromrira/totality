@@ -35,6 +35,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local B = require(script.Parent.RoomBuilder)
 local CrewNPC = require(script.Parent.CrewNPC)
+local Research = require(script.Parent.Research)
 
 local Lobby = {}
 
@@ -751,6 +752,74 @@ local function buildFloor2()
 	railing(85, 17, 92, 17, H1)
 end
 
+-- A little picture of Aphe and Peri, drawn with UI on the photo's face:
+-- the two of them in front of a Martian sunset, with a heart between them.
+local function photoOfApheAndPeri(photo: Part)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Right
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 250
+	gui.LightInfluence = 0.6
+	gui.Parent = photo
+	local function shape(color: Color3, x: number, y: number, w: number, h: number, round: number?, z: number?): Frame
+		local f = Instance.new("Frame")
+		f.BackgroundColor3 = color
+		f.BorderSizePixel = 0
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromScale(x, y)
+		f.Size = UDim2.fromScale(w, h)
+		f.ZIndex = z or 1
+		if round then
+			local c = Instance.new("UICorner")
+			c.CornerRadius = UDim.new(round, 0)
+			c.Parent = f
+		end
+		f.Parent = gui
+		return f
+	end
+	-- Sky (sunset gradient), sun, ground.
+	local sky = shape(Color3.new(1, 1, 1), 0.5, 0.5, 1, 1)
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 150)),
+		ColorSequenceKeypoint.new(0.55, Color3.fromRGB(240, 150, 110)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 140)),
+	})
+	g.Parent = sky
+	shape(Color3.fromRGB(255, 225, 170), 0.5, 0.62, 0.34, 0.3, 0.5, 2)
+	shape(Color3.fromRGB(160, 70, 45), 0.5, 0.88, 1, 0.28, nil, 3)
+	shape(Color3.fromRGB(130, 55, 38), 0.2, 0.76, 0.5, 0.12, 0.5, 3)
+	shape(Color3.fromRGB(140, 60, 40), 0.85, 0.75, 0.45, 0.14, 0.5, 3)
+	-- Aphe on the left: lavender skin, black suit and arms.
+	shape(Color3.fromRGB(25, 25, 30), 0.3, 0.83, 0.28, 0.42, 0.35, 4)
+	shape(Color3.fromRGB(206, 171, 236), 0.3, 0.5, 0.22, 0.22, 0.5, 5)
+	shape(Color3.fromRGB(40, 30, 50), 0.3, 0.42, 0.24, 0.1, 0.5, 6)
+	-- Peri on the right: tan skin, green cardigan.
+	shape(Color3.fromRGB(70, 115, 72), 0.7, 0.83, 0.28, 0.42, 0.35, 4)
+	shape(Color3.fromRGB(230, 225, 210), 0.7, 0.8, 0.06, 0.3, nil, 5)
+	shape(Color3.fromRGB(189, 154, 121), 0.7, 0.5, 0.22, 0.22, 0.5, 5)
+	shape(Color3.fromRGB(60, 40, 30), 0.7, 0.42, 0.24, 0.1, 0.5, 6)
+	-- Heart between them.
+	local heart = Instance.new("TextLabel")
+	heart.BackgroundTransparency = 1
+	heart.AnchorPoint = Vector2.new(0.5, 0.5)
+	heart.Position = UDim2.fromScale(0.5, 0.32)
+	heart.Size = UDim2.fromScale(0.3, 0.2)
+	heart.Text = "♥"
+	heart.TextScaled = true
+	heart.Font = Enum.Font.GothamBold
+	heart.TextColor3 = Color3.fromRGB(255, 110, 150)
+	heart.ZIndex = 7
+	heart.Parent = gui
+	-- White photo border.
+	local border = Instance.new("UIStroke")
+	border.Color = Color3.fromRGB(245, 240, 230)
+	border.Thickness = 6
+	border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	border.Parent = sky
+end
+
 -- Peri's office -------------------------------------------------------------------
 local function office()
 	local y = H1
@@ -837,7 +906,9 @@ local function office()
 	sign(nameplate, "PERI", Enum.NormalId.Left, Color3.fromRGB(220, 190, 120), Enum.Font.Garamond)
 	box("PhotoFrame", 20.3, top + 0.25, 19.3, 20.45, top + 1.35, 20.3, brass)
 	local photo = box("Photo", 20.45, top + 0.35, 19.4, 20.5, top + 1.25, 20.2, { Color = Color3.fromRGB(230, 220, 235) })
-	sign(photo, "A + P", Enum.NormalId.Right, Color3.fromRGB(150, 90, 170))
+	if photo then
+		photoOfApheAndPeri(photo)
+	end
 	cyl("LampBase", 23.6, top + 0.25, 12, 0.4, 0.15, brass)
 	box("LampStem", 23.55, top + 0.4, 11.95, 23.65, top + 2.1, 12.05, brass)
 	box("LampArm", 22.7, top + 2.05, 11.95, 23.65, top + 2.15, 12.05, brass)
@@ -845,10 +916,8 @@ local function office()
 	glow(shade, WARM, 12, 0.7)
 	cyl("Mug", 24, top + 0.25, 19.4, 0.22, 0.5, { Color = ORANGE })
 	cyl("Coffee", 24, top + 0.7, 19.4, 0.18, 0.06, { Color = Color3.fromRGB(60, 36, 20) })
-	for k = 0, 4 do
-		box("Paper", 20.5, top + 0.25 + k * 0.04, 11.3 + k * 0.03, 21.5, top + 0.28 + k * 0.04, 12.7 + k * 0.03, { Color = Color3.fromRGB(240, 238, 230) })
-	end
-	box("Folder", 20.4, top + 0.47, 11.2, 21.6, top + 0.52, 12.8, { Color = Color3.fromRGB(200, 170, 110) })
+	-- The same research folder players collect on the ship.
+	Research.Prop(cf(21, top + 0.28, 12) * CFrame.Angles(0, math.rad(18), 0), Random.new(5)).Parent = folder
 	cyl("PenCup", 21.2, top + 0.25, 20.3, 0.22, 0.55, { Color = DARK })
 	for k = 0, 2 do
 		box("Pen", 21.15 + k * 0.05, top + 0.6, 20.25, 21.2 + k * 0.05, top + 1.1, 20.3, { Color = ({ Color3.fromRGB(30, 60, 160), Color3.fromRGB(180, 30, 30), DARK })[k + 1] })
@@ -975,19 +1044,39 @@ local function office()
 	for k = 0, 3 do
 		box("CouchFoot", 0.6 + (k % 2) * 2.6, y, 24.2 + math.floor(k / 2) * 9.4, 0.9 + (k % 2) * 2.6, y + 0.3, 24.5 + math.floor(k / 2) * 9.4, walnutDark)
 	end
-	-- The cardigan: draped over the back of the couch, one sleeve hanging down
-	-- the front, buttons on the open front.
-	local cardigan = { Color = Color3.fromRGB(70, 115, 72), Material = Enum.Material.Fabric }
-	box("Cardigan", 0.3, y + 4, 28.6, 1.45, y + 4.25, 31.2, cardigan)
-	box("Cardigan", 1.3, y + 2.2, 28.7, 1.45, y + 4.1, 31.1, cardigan)
-	box("Cardigan", 1.45, y + 2, 28.9, 2.9, y + 2.12, 31, cardigan)
-	box("CardiganSleeve", 2.9, y + 1.95, 31.05, 3.7, y + 2.1, 31.6, cardigan)
-	box("CardiganSleeve", 3.62, y + 0.6, 31.1, 3.85, y + 1.95, 31.55, cardigan)
-	box("CardiganCuff", 3.62, y + 0.42, 31.1, 3.87, y + 0.62, 31.55, { Color = Color3.fromRGB(56, 95, 58), Material = Enum.Material.Fabric })
-	box("CardiganHem", 1.45, y + 2.12, 28.9, 2.9, y + 2.16, 29.15, { Color = Color3.fromRGB(56, 95, 58), Material = Enum.Material.Fabric })
-	for k = 0, 3 do
-		ball("Button", 1.5 + k * 0.4, y + 2.16, 29.4, 0.12, { Color = Color3.fromRGB(200, 180, 140) })
+	-- The cardigan: thrown over the back of the couch. The body drapes over
+	-- the backrest with one half hanging behind; the open front falls onto
+	-- the seat cushion; one sleeve lies across the seat, the other hangs
+	-- down the back. Everything is a little off-square so it looks soft.
+	local knit = { Color = Color3.fromRGB(68, 112, 72), Material = Enum.Material.Fabric, CanCollide = false }
+	local rib = { Color = Color3.fromRGB(56, 94, 60), Material = Enum.Material.Fabric, CanCollide = false }
+	local function piece(name, size, at, rx, ry, rz, props)
+		B.part(folder, name, size, at * CFrame.Angles(math.rad(rx), math.rad(ry), math.rad(rz)), props)
 	end
+	-- Over the top of the backrest, and the part hanging down behind it.
+	piece("Cardigan", Vector3.new(1.3, 0.16, 2.75), cf(0.85, y + 4.07, 29.9), 0, 4, 3, knit)
+	piece("Cardigan", Vector3.new(0.12, 1.5, 2.6), cf(0.3, y + 3.3, 29.85), 0, 3, -4, knit)
+	piece("CardiganRib", Vector3.new(0.14, 0.18, 2.6), cf(0.3, y + 2.5, 29.85), 0, 3, -4, rib)
+	-- Collar ribbing along the front edge of the drape.
+	piece("CardiganRib", Vector3.new(0.2, 0.2, 2.8), cf(1.42, y + 4.12, 29.9), 0, 4, 0, rib)
+	-- The two front halves hanging down the front of the backrest, splayed.
+	piece("Cardigan", Vector3.new(0.13, 1.95, 1.3), cf(1.44, y + 3.05, 29.25), -3, 0, -7, knit)
+	piece("Cardigan", Vector3.new(0.13, 1.9, 1.3), cf(1.46, y + 3.02, 30.62), 4, 0, -10, knit)
+	piece("ButtonBand", Vector3.new(0.15, 1.95, 0.16), cf(1.48, y + 3.05, 29.86), -3, 0, -7, rib)
+	for k = 0, 4 do
+		local by = y + 3.85 - k * 0.42
+		ball("Button", 1.56 + (y + 3.85 - by) * 0.12, by, 29.86, 0.11, { Color = Color3.fromRGB(205, 185, 145), CanCollide = false })
+	end
+	piece("Pocket", Vector3.new(0.05, 0.55, 0.6), cf(1.58, y + 2.65, 30.75), 4, 0, -10, rib)
+	-- Where the front pools on the seat, with the ribbed hem.
+	piece("Cardigan", Vector3.new(0.95, 0.13, 2.65), cf(1.85, y + 2.07, 29.95), 0, 5, 2, knit)
+	piece("CardiganRib", Vector3.new(0.22, 0.15, 2.66), cf(2.38, y + 2.07, 30.0), 0, 5, 2, rib)
+	-- Sleeve lying across the seat, ending in a cuff near the front edge.
+	piece("CardiganSleeve", Vector3.new(0.42, 0.3, 2.3), cf(2.2, y + 2.15, 31.75), 0, -38, 3, knit)
+	piece("CardiganCuff", Vector3.new(0.44, 0.32, 0.4), cf(2.92, y + 2.15, 32.62), 0, -38, 3, rib)
+	-- Other sleeve hanging down the back of the couch.
+	piece("CardiganSleeve", Vector3.new(0.32, 1.8, 0.42), cf(0.28, y + 3.1, 28.35), 6, 0, -3, knit)
+	piece("CardiganCuff", Vector3.new(0.34, 0.3, 0.44), cf(0.24, y + 2.1, 28.3), 6, 0, -3, rib)
 	-- Coffee table with a couple of books and a tablet.
 	box("CoffeeTable", 5.5, y + 1.3, 26.5, 9, y + 1.5, 31.5, walnut)
 	for _, p in { { 5.7, 26.7 }, { 8.6, 26.7 }, { 5.7, 31.1 }, { 8.6, 31.1 } } do

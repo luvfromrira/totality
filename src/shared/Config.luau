@@ -9,7 +9,7 @@ Config.SHOWCASE = false
 -- false = skip the lobby and start the run straight away.
 Config.LOBBY = true
 -- Where the lobby is built (its corner; this puts the middle of the building at 0, 0, 0).
-Config.LOBBY_CFRAME = CFrame.new(-49, 1.5, -25)
+Config.LOBBY_CFRAME = CFrame.new(-49, 2.5, -25)
 -- Puts the cutscene characters (Aphe, Peri) in room 1 so you can see how they look.
 Config.PREVIEW_NPC = false
 
