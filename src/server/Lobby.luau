@@ -1517,8 +1517,24 @@ function Lobby.Build(): CFrame
 		local biggest = math.max(size.X, size.Z)
 		if biggest > 1.6 then
 			file:ScaleTo(file:GetScale() * 1.6 / biggest)
-			local box, newSize = file:GetBoundingBox()
-			file:PivotTo(file:GetPivot() + Vector3.new(0, at.Position.Y - (box.Position.Y - newSize.Y / 2), 0))
+		end
+		-- Sit it on the cabinet: measure its lowest corner in world space (its
+		-- own bounding box may be tilted), then drop it onto the top.
+		local lowest = math.huge
+		for _, d in file:GetDescendants() do
+			if d:IsA("BasePart") then
+				local h = d.Size / 2
+				for _, sx in { -1, 1 } do
+					for _, sy in { -1, 1 } do
+						for _, sz in { -1, 1 } do
+							lowest = math.min(lowest, d.CFrame:PointToWorldSpace(Vector3.new(sx * h.X, sy * h.Y, sz * h.Z)).Y)
+						end
+					end
+				end
+			end
+		end
+		if lowest < math.huge then
+			file:PivotTo(file:GetPivot() + Vector3.new(0, at.Position.Y + 0.02 - lowest, 0))
 		end
 		file.Parent = folder
 	end
