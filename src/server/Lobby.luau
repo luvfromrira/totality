@@ -312,8 +312,9 @@ end
 local function buildPlatform()
 	box("Platform", 0, 0.1, 0, 30, PLAT, 38.6, { Color = Color3.fromRGB(196, 190, 182), Material = Enum.Material.Marble })
 	-- Steps down into the lobby, with glowing nosings.
-	for k = 1, 4 do
-		local top = PLAT - 0.5 * k
+	-- Three steps from the platform down to the floor (the floor is the fourth).
+	for k = 1, 3 do
+		local top = PLAT - (PLAT - 0.1) * k / 4
 		box("Step", 30 + (k - 1), 0.1, 24, 30 + k, top, 36, { Color = Color3.fromRGB(196, 190, 182), Material = Enum.Material.Marble })
 		box("Nosing", 30 + (k - 1), top, 24, 30 + (k - 1) + 0.15, top + 0.04, 36, { Color = AMBER, Material = NEON, CanCollide = false })
 	end
