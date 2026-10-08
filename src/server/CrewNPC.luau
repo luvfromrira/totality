@@ -34,6 +34,7 @@ local BODY_PARTS = {
 }
 
 local SKIN_COLOR = Color3.fromRGB(206, 171, 236)
+local ARM_COLOR = Color3.fromRGB(0, 0, 0)
 
 local BUNDLES = {
 	3209000400683, -- animation pack
@@ -111,9 +112,11 @@ function CrewNPC.GetDescription(): HumanoidDescription
 	for part, id in BODY_PARTS do
 		(desc :: any)[part] = id
 	end
-	for _, prop in { "HeadColor", "TorsoColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor" } do
+	for _, prop in { "HeadColor", "TorsoColor", "LeftLegColor", "RightLegColor" } do
 		(desc :: any)[prop] = SKIN_COLOR
 	end
+	desc.LeftArmColor = ARM_COLOR
+	desc.RightArmColor = ARM_COLOR
 	if #layered > 0 then
 		desc:SetAccessories(layered, true)
 	end
