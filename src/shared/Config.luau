@@ -5,6 +5,8 @@ Config.TOTAL_ROOMS = 100
 
 -- true = don't start a run; lay out every room side by side to look at.
 Config.SHOWCASE = false
+-- Puts the cutscene crew NPC in room 1 so you can see how it looks.
+Config.PREVIEW_NPC = true
 
 -- Set to a number to replay the same run every time (e.g. 194006090).
 -- Leave as nil for a new random run each time.
