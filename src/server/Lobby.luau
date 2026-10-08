@@ -687,7 +687,7 @@ local function buildStairs()
 	stairRail(80, 0, 92, 7, 17.15)
 	-- (The north rail of the upper flight stops where the landing above closes
 	-- in over it; the railing around the stair opening takes over from there.)
-	stairRail(92, 7, 86.2, 10.4, 11)
+	stairRail(92, 7, 87.9, 9.4, 11.15)
 	stairRail(92, 7, 80, 14, 15.85)
 	railing(92, 11, 97.4, 11, 7)
 	railing(97.4, 22, 92, 22, 7)
