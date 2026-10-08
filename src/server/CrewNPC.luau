@@ -153,6 +153,23 @@ function CrewNPC.Spawn(name: string, cframe: CFrame, parent: Instance?): Model
 	local npc = if saved and saved:IsA("Model") then saved:Clone()
 		else Players:CreateHumanoidModelFromDescription(CrewNPC.GetDescription(name), Enum.HumanoidRigType.R15)
 	npc.Name = name
+	if saved then
+		-- Accessories you repositioned by hand (welded with a WeldConstraint)
+		-- keep their spot: drop their attachment points so the Humanoid
+		-- doesn't snap them back to the default place when the copy spawns.
+		for _, acc in npc:GetDescendants() do
+			local handle = acc:IsA("Accessory") and acc:FindFirstChild("Handle")
+			if handle and handle:FindFirstChildOfClass("WeldConstraint") then
+				for _, d in handle:GetChildren() do
+					if d:IsA("Attachment") or d.Name == "AccessoryWeld" or d:IsA("RigidConstraint") then
+						d:Destroy()
+					end
+				end
+			end
+		end
+	else
+		print(`[Totality] No {name} in ServerStorage, so {name} was built from the item IDs in CrewNPC.`)
+	end
 	local humanoid = npc:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	local root = npc:FindFirstChild("HumanoidRootPart") :: BasePart
