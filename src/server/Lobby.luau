@@ -1506,12 +1506,22 @@ function Lobby.Build(): CFrame
 	findPods()
 
 	-- Peri at his office window, looking out over the lobby.
+	-- The saved Peri in ServerStorage always wins: a Peri already standing in a
+	-- saved Lobby is swapped for a fresh copy of it, in the same spot.
 	task.spawn(function()
-		if folder:FindFirstChild("Peri", true) then
-			return
-		end
 		local at = pos(27.6, H1, 24)
-		local ok, err = pcall(CrewNPC.Spawn, "Peri", CFrame.lookAt(at, at + Vector3.new(1, 0, 0)), folder)
+		local spot = CFrame.lookAt(at, at + O.RightVector)
+		local existing = folder:FindFirstChild("Peri", true)
+		if existing and existing:IsA("Model") then
+			if not game:GetService("ServerStorage"):FindFirstChild("Peri") then
+				return -- nothing newer to swap in
+			end
+			local box, size = existing:GetBoundingBox()
+			local feet = box.Position - Vector3.new(0, size.Y / 2, 0)
+			spot = CFrame.new(feet) * existing:GetPivot().Rotation
+			existing:Destroy()
+		end
+		local ok, err = pcall(CrewNPC.Spawn, "Peri", spot, folder)
 		if not ok then
 			warn(`[Totality] Couldn't place Peri in the lobby: {err}`)
 		end
