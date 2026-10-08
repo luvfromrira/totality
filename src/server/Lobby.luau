@@ -173,7 +173,7 @@ local function v(x: number, z: number): Vector2
 end
 
 -- Building outline (both floors) and the open atrium above the lobby.
-local OUTLINE = { v(0, 0), v(82, 0), v(98, 11), v(98, 34), v(79, 50), v(36, 50), v(28, 38.6), v(0, 38.6) }
+local OUTLINE = { v(0, 0), v(98, 0), v(98, 34), v(79, 50), v(36, 50), v(28, 38.6), v(0, 38.6) }
 local VOID = { v(29, 0), v(68, 0), v(68, 24), v(85, 24), v(85, 31), v(76, 39.4), v(39, 39.4), v(29, 30) }
 
 local H1, H2 = 14, 34 -- floor 2 level, roof underside
@@ -247,7 +247,7 @@ local function buildShell()
 	end
 	-- North (back) wall: clerestory windows high over the atrium.
 	-- The pods sit in an annex behind it, their doorways flush with the wall.
-	solid("Wall", 0, 0, 82, 0, { { 32, 74, 22, 30 }, { 30.6, 77, 0, 12.6 } })
+	solid("Wall", 0, 0, 98, 0, { { 32, 74, 22, 30 }, { 30.6, 77, 0, 12.6 } })
 	-- West wall: EVA airlock from the locker room, office window.
 	solid("Wall", 0, 38.6, 0, 0, { { 24.6, 29.6, PLAT, PLAT + 8 }, { 8, 30, 16, 23 } })
 	-- South-west wall along the hallway: window band on both floors.
@@ -274,7 +274,7 @@ local function buildShell()
 
 	-- Curtain walls: floor-to-roof glass onto Mars ------------------------------
 	local curtains = {
-		{ 82, 0, 98, 11 }, { 98, 11, 98, 34 }, { 98, 34, 79, 50 }, { 79, 50, 36, 50 }, { 36, 50, 28, 38.6 },
+		{ 98, 0, 98, 34 }, { 98, 34, 79, 50 }, { 79, 50, 36, 50 }, { 36, 50, 28, 38.6 },
 	}
 	for _, c in curtains do
 		local ax, az, bx, bz = c[1], c[2], c[3], c[4]
@@ -458,36 +458,6 @@ local function podAnnex()
 	box("Roof", 29, 12.6, -16, 78, 13.6, -1, { Color = Color3.fromRGB(190, 186, 180), Material = Enum.Material.Concrete })
 end
 
--- Railing up a straight flight of stairs running along x, at depth z.
-local function stairRail(xa: number, ya: number, xb: number, yb: number, z: number)
-	local len = math.sqrt((xb - xa) ^ 2 + (yb - ya) ^ 2)
-	local angle = math.atan2(yb - ya, xb - xa)
-	-- Offsets are vertical (in world space) so the rail sits exactly on top of
-	-- the posts, and the glass keeps the same vertical height along the slope.
-	local function along(up: number): CFrame
-		return cf((xa + xb) / 2, (ya + yb) / 2 + up, z) * CFrame.Angles(0, 0, angle)
-	end
-	local c = math.cos(angle)
-	B.part(folder, "Rail", Vector3.new(len, 0.25 * c, 0.3), along(3.5), { Color = STEEL, Material = METAL })
-	B.part(folder, "RailGlass", Vector3.new(len, 3.1 * c, 0.1), along(1.85),
-		{ Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.65 })
-	B.part(folder, "RailBase", Vector3.new(len, 0.2 * c, 0.3), along(0.2), { Color = DARK, Material = METAL })
-	local n = math.max(1, math.round(math.abs(xb - xa) / 3.5))
-	for i = 0, n do
-		local t = i / n
-		local x, y = xa + (xb - xa) * t, ya + (yb - ya) * t
-		if once("post", x, y, z) then
-			box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.6, z + 0.12, { Color = STEEL, Material = METAL })
-		end
-	end
-	for _, e in { { xa, ya }, { xb, yb } } do
-		if not once("cap", e[1], e[2], z) then
-			continue
-		end
-		box("RailCap", e[1] - 0.2, e[2] + 3.36, z - 0.2, e[1] + 0.2, e[2] + 3.7, z + 0.2, { Color = STEEL, Material = METAL })
-	end
-end
-
 -- Launch pods ---------------------------------------------------------------------
 type Pod = { name: string, screen: TextLabel, lamp: Part, zone: CFrame, zoneSize: Vector3,
 	doors: { { part: Part, open: CFrame, shut: CFrame } }, spawn: CFrame }
@@ -659,35 +629,54 @@ local function railing(ax: number, az: number, bx: number, bz: number, y: number
 	end
 end
 
+-- Railing up a straight flight of stairs from (ax, az) at height ya to
+-- (bx, bz) at height yb. Offsets are vertical so the rail sits right on the
+-- posts and the glass keeps the same height along the slope.
+local function slopeRail(ax: number, az: number, ya: number, bx: number, bz: number, yb: number)
+	local a, b = pos(ax, ya, az), pos(bx, yb, bz)
+	local len = (b - a).Magnitude
+	local c = (Vector2.new(bx, bz) - Vector2.new(ax, az)).Magnitude / len
+	local function along(up: number): CFrame
+		local mid = (a + b) / 2 + Vector3.new(0, up, 0)
+		return CFrame.lookAt(mid, mid + (b - a))
+	end
+	B.part(folder, "Rail", Vector3.new(0.3, 0.25 * c, len), along(3.5), { Color = STEEL, Material = METAL })
+	B.part(folder, "RailGlass", Vector3.new(0.1, 3.1 * c, len), along(1.85),
+		{ Color = GLASS, Material = Enum.Material.Glass, Transparency = 0.65 })
+	B.part(folder, "RailBase", Vector3.new(0.3, 0.2 * c, len), along(0.2), { Color = DARK, Material = METAL })
+	local n = math.max(1, math.round(len / 3.5))
+	for i = 0, n do
+		local t = i / n
+		local x, z, y = ax + (bx - ax) * t, az + (bz - az) * t, ya + (yb - ya) * t
+		if once("post", x, y, z) then
+			box("RailPost", x - 0.12, y, z - 0.12, x + 0.12, y + 3.6, z + 0.12, { Color = STEEL, Material = METAL })
+		end
+	end
+	-- Only the bottom end gets a cap; at the top the landing railing's cap sits
+	-- right beside it.
+	for _, e in { { ax, ya, az } } do
+		if once("cap", e[1], e[2], e[3]) then
+			box("RailCap", e[1] - 0.2, e[2] + 3.36, e[3] - 0.2, e[1] + 0.2, e[2] + 3.7, e[3] + 0.2, { Color = STEEL, Material = METAL })
+		end
+	end
+end
+
+-- One straight flight flush against the east windows, climbing north from
+-- the lobby floor (z 30) to the landing (z 6). Solid underneath.
+local STAIR_X0, STAIR_X1 = 92.3, 97.3
+local STAIR_TOP, STAIR_BOTTOM = 6, 30
 local function buildStairs()
 	local stepProps = { Color = Color3.fromRGB(80, 84, 92), Material = Enum.Material.DiamondPlate }
-	-- Flight 1: x 80 -> 92 along z 17..22, rising 0 -> 7 (solid underneath).
-	local run = 12 / 14
-	for i = 1, 14 do
-		local xa, xb = 80 + (i - 1) * run, 80 + i * run
-		box("Step", xa, 0.1, 17, xb, i * 0.5, 22, stepProps)
-		box("Nosing", xa, i * 0.5, 17, xa + 0.12, i * 0.5 + 0.03, 22, { Color = AMBER, Material = NEON, CanCollide = false })
+	local steps = 28
+	local run = (STAIR_BOTTOM - STAIR_TOP) / steps
+	for i = 1, steps do
+		local za, zb = STAIR_BOTTOM - i * run, STAIR_BOTTOM - (i - 1) * run
+		local top = i * H1 / steps
+		box("Step", STAIR_X0, 0.1, za, STAIR_X1, top, zb, stepProps)
+		box("Nosing", STAIR_X0, top, zb - 0.12, STAIR_X1, top + 0.03, zb, { Color = AMBER, Material = NEON, CanCollide = false })
 	end
-	-- Mid landing at y 7 on a column.
-	box("Landing", 92, 6.4, 11, 97.4, 7, 22, stepProps)
-	box("LandingColumn", 94, 0.1, 15.5, 95, 6.4, 16.5, { Color = DARK, Material = METAL })
-	-- Flight 2: x 92 -> 80 along z 11..16, rising 7 -> 14 (open treads on stringers).
-	for j = 1, 14 do
-		local xa, xb = 92 - j * run, 92 - (j - 1) * run
-		box("Tread", xa, 6.6 + j * 0.5, 11, xb, 7 + j * 0.5, 16, stepProps)
-		box("Nosing", xb - 0.12, 7 + j * 0.5, 11, xb, 7.03 + j * 0.5, 16, { Color = AMBER, Material = NEON, CanCollide = false })
-	end
-	-- Stringer along the open side, just outside the treads so they don't overlap.
-	B.part(folder, "Stringer", Vector3.new(13.9, 1, 0.3), cf(86, 10.5, 16.15) * CFrame.Angles(0, 0, math.atan2(-7, 12)),
-		{ Color = DARK, Material = METAL })
-	-- Solid wall along the other side, up to the landing above it.
-	box("StairWall", 80, 6.4, 10.6, 91.85, H1 - 1, 10.86, { Color = WHITE, Material = SMOOTH })
-	-- Railings on both sides of both flights and around the mid landing.
-	stairRail(80, 0, 92, 7, 22)
-	stairRail(80, 0, 92, 7, 17.15)
-	stairRail(92, 7, 80, 14, 15.85)
-	railing(92, 11, 97.4, 11, 7)
-	railing(97.4, 22, 92, 22, 7)
+	-- Glass railing along the open (lobby) side.
+	slopeRail(STAIR_X0 + 0.15, STAIR_BOTTOM, 0, STAIR_X0 + 0.15, STAIR_TOP, H1)
 end
 
 local function buildFloor2()
@@ -699,17 +688,9 @@ local function buildFloor2()
 	-- Office floor, and a beam under the office wall where it overhangs the atrium.
 	slabBox(0, 0, 29, 38.6)
 	box("Beam", 29, H1 - 1, 0, 29.6, H1, 30, { Color = DARK, Material = METAL })
-	-- Stair landing (with the hole over flight 2) and its corner along the diagonal glass.
-	slabBox(68, 0, 80, 24)
-	slabBox(80, 17, 98, 24)
-	slabBox(80, 0, 82, 11)
-	slabBox(82, 3, 86, 11)
-	slabBox(86, 6, 90, 11)
-	slabBox(90, 8, 92, 11)
-	slabBox(92, 9.5, 95, 11)
-	slabBox(92, 11, 98, 17)
-	local strip = seg("Slab", 82, 0, 98, 11, H1 - 1.02, H1 - 0.02, 4, 2, slab)
-	_ = strip
+	-- Stair landing, open along the windows where the stairs come up.
+	slabBox(68, 0, STAIR_X0, 24)
+	slabBox(STAIR_X0, 0, 98, STAIR_TOP)
 	_ = under
 
 	-- Grate walkway: every 1-stud row of the walkway area gets an invisible
@@ -721,7 +702,7 @@ local function buildFloor2()
 		if x < 29 and z < 38.6 then
 			return false -- office
 		end
-		if x >= 68 and z < 24 then
+		if (x >= 68 and z < 24) or (x >= STAIR_X0 and z < STAIR_BOTTOM + 0.5) then
 			return false -- landing
 		end
 		return true
@@ -774,9 +755,9 @@ local function buildFloor2()
 	railing(85, 31, 85, 24, H1)
 	railing(68, 0.7, 68, 24, H1)
 	railing(68, 24, 85, 24, H1)
-	railing(80, 11, 92, 11, H1)
-	railing(92, 11, 92, 17, H1)
-	railing(80, 17, 92, 17, H1)
+	-- Around the stair opening along the windows.
+	railing(STAIR_X0 - 0.15, STAIR_TOP, STAIR_X0 - 0.15, STAIR_BOTTOM + 0.5, H1)
+	railing(STAIR_X0 - 0.15, STAIR_BOTTOM + 0.5, 97.6, STAIR_BOTTOM + 0.5, H1)
 end
 
 -- A little picture of Aphe and Peri, drawn with UI on the photo's face:
@@ -1237,13 +1218,12 @@ local function atrium()
 	sofa(60, 44, math.pi)
 	sofa(72, 43, math.pi)
 	-- Facing the east windows.
-	sofa(92, 28, -math.pi / 2)
 	for _, t in { { 46, 47.3 }, { 60, 47.3 } } do
 		box("LowTable", t[1] - 2, 1, t[2] - 1, t[1] + 2, 1.2, t[2] + 1, { Color = Color3.fromRGB(40, 42, 48), Material = Enum.Material.Granite })
 		box("TableBase", t[1] - 0.4, 0.1, t[2] - 0.4, t[1] + 0.4, 1, t[2] + 0.4, { Color = STEEL, Material = METAL })
 	end
 	-- Planters between the seating groups.
-	for _, p in { { 53, 46 }, { 67, 46 }, { 40, 45 }, { 90, 36 }, { 94, 20 } } do
+	for _, p in { { 53, 46 }, { 67, 46 }, { 40, 45 }, { 89, 37 } } do
 		cyl("Planter", p[1], 0.1, p[2], 1.1, 2, { Color = WHITE, Material = SMOOTH })
 		ball("Plant", p[1], 3.6, p[2], 2.8, { Color = Color3.fromRGB(150, 55, 45), Material = Enum.Material.Grass })
 	end
