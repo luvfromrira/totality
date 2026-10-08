@@ -173,6 +173,12 @@ function CrewNPC.Spawn(name: string, cframe: CFrame, parent: Instance?): Model
 	local humanoid = npc:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	local root = npc:FindFirstChild("HumanoidRootPart") :: BasePart
+	-- Only the root is anchored, so the joints can still move (idle animations).
+	for _, d in npc:GetDescendants() do
+		if d:IsA("BasePart") and d ~= root then
+			d.Anchored = false
+		end
+	end
 	root.Anchored = true
 	local _, size = npc:GetBoundingBox()
 	npc:PivotTo(cframe + Vector3.new(0, size.Y / 2, 0))

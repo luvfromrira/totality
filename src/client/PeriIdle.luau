@@ -104,11 +104,28 @@ end
 
 local function animate(peri: Model, file: Model?)
 	local joints: { [string]: Motor6D } = {}
+	local root = peri:FindFirstChild("HumanoidRootPart")
 	for _, d in peri:GetDescendants() do
 		if d:IsA("Motor6D") then
 			joints[d.Name] = d
+		elseif d:IsA("BasePart") and d ~= root then
+			-- Joints can't move anchored parts; only the root holds him in place.
+			d.Anchored = false
+		elseif d:IsA("Animator") then
+			-- An Animator resets joints every frame; he plays no animations, so
+			-- drop it on this client so it doesn't undo the movement.
+			d:Destroy()
 		end
 	end
+	local count = 0
+	for _ in joints do
+		count += 1
+	end
+	if count == 0 then
+		warn("[Totality] Peri has no Motor6D joints, so he can't be animated")
+		return
+	end
+	print(`[Totality] Animating Peri ({count} joints)`)
 	local leftHand = peri:FindFirstChild("LeftHand", true) :: BasePart?
 	local fileRest = file and file:GetPivot()
 	local clock = math.random() * LENGTH
