@@ -1187,6 +1187,7 @@ local function atrium()
 			{ Color = Color3.fromRGB(255, 200, 120), Material = NEON, CanCollide = false })
 	end
 	core.WorldPivot = centre
+	core:SetAttribute("SpinPivot", centre)
 	core:SetAttribute("Spin", 20)
 	orrery.PrimaryPart = sun
 
@@ -1223,6 +1224,7 @@ local function atrium()
 			end
 		end
 		body.WorldPivot = centre
+		body:SetAttribute("SpinPivot", centre)
 		body:SetAttribute("Spin", p[4])
 	end
 	-- Keep the orrery out of collisions and raycasts.
