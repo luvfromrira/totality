@@ -14,14 +14,22 @@ function Spin.Start()
 			info.parts[part] = info.centre:ToObjectSpace(part.CFrame)
 		end
 	end
-	local function watch(d: Instance)
+	local watch
+	function watch(d: Instance)
 		if d:IsA("Model") and d:GetAttribute("Spin") and not spinning[d] then
 			-- The centre comes from the SpinPivot attribute when there is one: a
 			-- model's own pivot can read as the world origin on the client before
 			-- it finishes arriving, which sent things spinning into the floor.
 			local centre = d:GetAttribute("SpinPivot")
 			if typeof(centre) ~= "CFrame" then
-				centre = d:GetPivot()
+				if not d.PrimaryPart then
+					-- No centre known yet; try again once its main part arrives.
+					d:GetPropertyChangedSignal("PrimaryPart"):Once(function()
+						watch(d)
+					end)
+					return
+				end
+				centre = d.PrimaryPart.CFrame
 			end
 			spinning[d] = { centre = centre, parts = {} }
 			for _, p in d:GetDescendants() do

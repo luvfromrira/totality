@@ -1130,36 +1130,16 @@ local function office()
 	end
 end
 
--- Atrium centrepiece and lobby furniture --------------------------------------------
-local function atrium()
-	local cx, cz = 60, 26
-	-- Floor inlay rings under the orrery.
-	for i, r in { 9, 7.6, 4.8 } do
-		cyl("InlayRing", cx, 0.1, cz, r, 0.02 + i * 0.01, { Color = if i == 2 then FLOOR else (if i == 1 then INLAY else ORANGE), CanCollide = false })
-	end
-	-- Round bench around a planter of Martian greenhouse plants.
-	for i = 0, 15 do
-		local a = i * math.pi / 8
-		local p = B.part(folder, "Bench", Vector3.new(1.4, 1.6, 2.1),
-			cf(cx + math.cos(a) * 4.2, 0.9, cz + math.sin(a) * 4.2) * CFrame.Angles(0, -a, 0),
-			{ Color = WOOD, Material = Enum.Material.Wood })
-		_ = p
-	end
-	cyl("BenchCore", cx, 0.1, cz, 3.5, 2.2, { Color = WHITE, Material = SMOOTH })
-	cyl("Soil", cx, 2.3, cz, 3.2, 0.1, { Color = Color3.fromRGB(90, 50, 35), Material = Enum.Material.Ground })
-	local rng = Random.new(3)
-	for _ = 1, 9 do
-		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, 2.2)
-		ball("Plant", cx + math.cos(a) * r, 3 + rng:NextNumber(0, 1.2), cz + math.sin(a) * r, rng:NextNumber(1.4, 2.4),
-			{ Color = Color3.fromRGB(rng:NextInteger(120, 170), rng:NextInteger(40, 60), 45), Material = Enum.Material.Grass })
-	end
-
-	-- The orrery: a glowing sun with rings and planets, hung from the skylight.
+-- The orrery: a glowing sun with rings and planets, hung from the skylight.
+-- Always built fresh (a saved Lobby's copy is replaced), since a copy taken
+-- mid-spin would have its pieces out of place.
+local ORRERY_X, ORRERY_Z = 60, 26
+local function buildOrrery(cx: number, cz: number)
 	local orrery = Instance.new("Model")
 	orrery.Name = "Orrery"
 	orrery.Parent = folder
 	local sy = 24
-	box("Cable", cx - 0.06, sy + 3, cz - 0.06, cx + 0.06, H2, cz + 0.06, { Color = DARK, CanCollide = false })
+	box("Cable", cx - 0.06, sy + 3, cz - 0.06, cx + 0.06, H2, cz + 0.06, { Color = DARK, CanCollide = false }, orrery)
 	-- The sun spins on its own (spots and a tilted flare ring show it turning);
 	-- each planet circles it on its own arm at its own speed, inner ones
 	-- fastest. The client turns any model with a Spin attribute (degrees per
@@ -1233,6 +1213,34 @@ local function atrium()
 			d.CanQuery = false
 		end
 	end
+
+end
+
+-- Atrium centrepiece and lobby furniture --------------------------------------------
+local function atrium()
+	local cx, cz = ORRERY_X, ORRERY_Z
+	-- Floor inlay rings under the orrery.
+	for i, r in { 9, 7.6, 4.8 } do
+		cyl("InlayRing", cx, 0.1, cz, r, 0.02 + i * 0.01, { Color = if i == 2 then FLOOR else (if i == 1 then INLAY else ORANGE), CanCollide = false })
+	end
+	-- Round bench around a planter of Martian greenhouse plants.
+	for i = 0, 15 do
+		local a = i * math.pi / 8
+		local p = B.part(folder, "Bench", Vector3.new(1.4, 1.6, 2.1),
+			cf(cx + math.cos(a) * 4.2, 0.9, cz + math.sin(a) * 4.2) * CFrame.Angles(0, -a, 0),
+			{ Color = WOOD, Material = Enum.Material.Wood })
+		_ = p
+	end
+	cyl("BenchCore", cx, 0.1, cz, 3.5, 2.2, { Color = WHITE, Material = SMOOTH })
+	cyl("Soil", cx, 2.3, cz, 3.2, 0.1, { Color = Color3.fromRGB(90, 50, 35), Material = Enum.Material.Ground })
+	local rng = Random.new(3)
+	for _ = 1, 9 do
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, 2.2)
+		ball("Plant", cx + math.cos(a) * r, 3 + rng:NextNumber(0, 1.2), cz + math.sin(a) * r, rng:NextNumber(1.4, 2.4),
+			{ Color = Color3.fromRGB(rng:NextInteger(120, 170), rng:NextInteger(40, 60), 45), Material = Enum.Material.Grass })
+	end
+
+	buildOrrery(cx, cz)
 
 	-- Departure board on the back wall above the pods.
 	box("Board", 33.5, 16.4, 0, 66, 17.4, 0.4, { Color = DARK })
@@ -1521,6 +1529,17 @@ function Lobby.Build(): CFrame
 	if saved and saved:IsA("Folder") then
 		folder = saved
 		print("[Totality] Using the Lobby saved in the Workspace.")
+		local old = folder:FindFirstChild("Orrery", true)
+		if old then
+			old:Destroy()
+		end
+		for _, d in folder:GetChildren() do
+			-- (older versions hung the orrery's cable outside the model)
+			if d.Name == "Cable" then
+				d:Destroy()
+			end
+		end
+		buildOrrery(ORRERY_X, ORRERY_Z)
 	else
 		folder = Instance.new("Folder")
 		folder.Name = "Lobby"
