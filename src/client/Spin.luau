@@ -1,5 +1,6 @@
--- Slowly turns models with a "Spin" attribute (degrees per second) around
--- their PrimaryPart, like the orrery in the lobby. Client-side so it's smooth.
+-- Turns models with a "Spin" attribute (degrees per second) around their
+-- pivot, like the sun and planets of the orrery in the lobby. Client-side so
+-- it's smooth.
 local RunService = game:GetService("RunService")
 
 local Spin = {}
@@ -7,7 +8,7 @@ local Spin = {}
 function Spin.Start()
 	local spinning: { [Model]: CFrame } = {}
 	local function watch(d: Instance)
-		if d:IsA("Model") and d:GetAttribute("Spin") and d.PrimaryPart then
+		if d:IsA("Model") and d:GetAttribute("Spin") and not spinning[d] then
 			spinning[d] = d:GetPivot()
 		end
 	end

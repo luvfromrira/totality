@@ -1160,31 +1160,72 @@ local function atrium()
 	orrery.Parent = folder
 	local sy = 24
 	box("Cable", cx - 0.06, sy + 3, cz - 0.06, cx + 0.06, H2, cz + 0.06, { Color = DARK, CanCollide = false })
-	local sun = ball("Sun", cx, sy, cz, 6, { Color = Color3.fromRGB(255, 150, 50), Material = NEON, CanCollide = false }, orrery) :: Part
+	-- The sun spins on its own (spots and a tilted flare ring show it turning);
+	-- each planet circles it on its own arm at its own speed, inner ones
+	-- fastest. The client turns any model with a Spin attribute (degrees per
+	-- second) around its pivot.
+	local centre = cf(cx, sy, cz)
+	local core = Instance.new("Model")
+	core.Name = "SunCore"
+	core.Parent = orrery
+	local sun = ball("Sun", cx, sy, cz, 6, { Color = Color3.fromRGB(255, 150, 50), Material = NEON, CanCollide = false }, core) :: Part
 	glow(sun, Color3.fromRGB(255, 170, 90), 60, 1.4)
+	local rng = Random.new(11)
+	for _ = 1, 14 do
+		local yaw, pitch = rng:NextNumber(0, math.pi * 2), rng:NextNumber(-1, 1)
+		local dir = Vector3.new(math.cos(yaw) * math.cos(pitch), math.sin(pitch), math.sin(yaw) * math.cos(pitch))
+		local spot = B.part(core, "Sunspot", Vector3.one * rng:NextNumber(0.5, 1.1), centre * CFrame.new(dir * 2.85),
+			{ Color = Color3.fromRGB(200, 80, 25), Material = NEON, CanCollide = false })
+		if spot then
+			spot.Shape = Enum.PartType.Ball
+		end
+	end
+	for k = 0, 35 do
+		local t = k * math.pi / 18
+		B.part(core, "Flare", Vector3.new(0.18, 0.18, 4.1 * math.pi / 18 + 0.05),
+			centre * CFrame.Angles(math.rad(20), 0, 0) * CFrame.new(math.cos(t) * 4.1, 0, math.sin(t) * 4.1) * CFrame.Angles(0, -t, 0),
+			{ Color = Color3.fromRGB(255, 200, 120), Material = NEON, CanCollide = false })
+	end
+	core.WorldPivot = centre
+	core:SetAttribute("Spin", 20)
 	orrery.PrimaryPart = sun
+
 	local planets = {
-		{ 5.2, 0.8, Color3.fromRGB(170, 160, 150) }, { 7.4, 1.2, Color3.fromRGB(230, 200, 140) },
-		{ 9.6, 1.3, Color3.fromRGB(80, 130, 200) }, { 11.6, 1, Color3.fromRGB(200, 90, 50) },
-		{ 13.5, 2.2, Color3.fromRGB(210, 170, 120) },
+		{ 5.2, 0.8, Color3.fromRGB(170, 160, 150), 34 }, { 7.4, 1.2, Color3.fromRGB(230, 200, 140), 24 },
+		{ 9.6, 1.3, Color3.fromRGB(80, 130, 200), 17 }, { 11.6, 1, Color3.fromRGB(200, 90, 50), 12 },
+		{ 13.5, 2.2, Color3.fromRGB(210, 170, 120), 7 },
 	}
 	for i, p in planets do
 		local a = i * 1.3
-		-- Thin ring for the orbit, an arm, and the planet.
+		-- Thin ring for the orbit (stays still).
 		for k = 0, 23 do
 			local t = k * math.pi / 12
 			B.part(orrery, "Orbit", Vector3.new(0.08, 0.08, p[1] * math.pi / 12 + 0.05),
 				cf(cx + math.cos(t) * p[1], sy, cz + math.sin(t) * p[1]) * CFrame.Angles(0, -t, 0),
 				{ Color = Color3.fromRGB(200, 170, 120), Material = METAL, CanCollide = false })
 		end
-		B.part(orrery, "Arm", Vector3.new(p[1], 0.12, 0.12),
+		-- The arm and planet go round together.
+		local body = Instance.new("Model")
+		body.Name = "PlanetArm"
+		body.Parent = orrery
+		B.part(body, "Arm", Vector3.new(p[1], 0.12, 0.12),
 			cf(cx + math.cos(a) * p[1] / 2, sy, cz + math.sin(a) * p[1] / 2) * CFrame.Angles(0, -a, 0),
 			{ Color = STEEL, Material = METAL, CanCollide = false })
-		ball("Planet", cx + math.cos(a) * p[1], sy, cz + math.sin(a) * p[1], p[2], { Color = p[3], CanCollide = false }, orrery)
+		ball("Planet", cx + math.cos(a) * p[1], sy, cz + math.sin(a) * p[1], p[2], { Color = p[3], CanCollide = false }, body)
+		if i == 5 then
+			-- Rings for the big outer planet.
+			for k = 0, 17 do
+				local t = k * math.pi / 9
+				local px, pz = cx + math.cos(a) * p[1], cz + math.sin(a) * p[1]
+				B.part(body, "PlanetRing", Vector3.new(0.1, 0.06, 1.8 * math.pi / 9 + 0.05),
+					cf(px, sy, pz) * CFrame.Angles(math.rad(25), 0, 0) * CFrame.new(math.cos(t) * 1.8, 0, math.sin(t) * 1.8) * CFrame.Angles(0, -t, 0),
+					{ Color = Color3.fromRGB(230, 205, 160), Material = METAL, CanCollide = false })
+			end
+		end
+		body.WorldPivot = centre
+		body:SetAttribute("Spin", p[4])
 	end
-	-- The client turns models with a Spin attribute (degrees per second).
-	orrery:SetAttribute("Spin", 6)
-	-- Hide the planet arms from collisions etc.
+	-- Keep the orrery out of collisions and raycasts.
 	for _, d in orrery:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.CanQuery = false
