@@ -1154,7 +1154,9 @@ local function buildOrrery(cx: number, cz: number)
 	for _ = 1, 14 do
 		local yaw, pitch = rng:NextNumber(0, math.pi * 2), rng:NextNumber(-1, 1)
 		local dir = Vector3.new(math.cos(yaw) * math.cos(pitch), math.sin(pitch), math.sin(yaw) * math.cos(pitch))
-		local spot = B.part(core, "Sunspot", Vector3.one * rng:NextNumber(0.5, 1.1), centre * CFrame.new(dir * 2.85),
+		-- Sunk almost all the way in, so only a flat darker patch shows on the surface.
+		local d = rng:NextNumber(0.9, 1.5)
+		local spot = B.part(core, "Sunspot", Vector3.one * d, centre * CFrame.new(dir * (3.04 - d / 2)),
 			{ Color = Color3.fromRGB(200, 80, 25), Material = NEON, CanCollide = false })
 		if spot then
 			spot.Shape = Enum.PartType.Ball
